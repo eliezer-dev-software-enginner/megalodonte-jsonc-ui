@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Megalodonte JSONC UI v1",
+  "description": "JSONC source is parsed into JSON before validation. Runtime also checks state types and action references.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "id", "states", "view"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "id": { "$ref": "#/$defs/identifier" },
+    "states": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": { "$ref": "#/$defs/state" }
+    },
+    "view": { "$ref": "#/$defs/node" }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+    "size": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "initial"],
+      "properties": {
+        "type": { "enum": ["string", "boolean", "integer", "decimal"] },
+        "initial": {}
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "string" } } }, "then": { "properties": { "initial": { "type": "string" } } } },
+        { "if": { "properties": { "type": { "const": "boolean" } } }, "then": { "properties": { "initial": { "type": "boolean" } } } },
+        { "if": { "properties": { "type": { "const": "integer" } } }, "then": { "properties": { "initial": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 } } } },
+        { "if": { "properties": { "type": { "const": "decimal" } } }, "then": { "properties": { "initial": { "type": "string", "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$" } } } }
+      ]
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fontSize": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "bold": { "type": "boolean" },
+        "textColor": { "type": "string" },
+        "fontFamily": { "type": "string" }
+      }
+    },
+    "layoutProps": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "spacing": { "$ref": "#/$defs/size" }, "padding": { "$ref": "#/$defs/size" },
+        "width": { "$ref": "#/$defs/size" }, "height": { "$ref": "#/$defs/size" }, "maxWidth": { "$ref": "#/$defs/size" },
+        "fillWidth": { "type": "boolean" }, "fillHeight": { "type": "boolean" },
+        "alignment": { "enum": ["start", "center", "end"] }, "bgColor": { "type": "string" }
+      }
+    },
+    "textProps": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "text": { "type": "string" }, "wrapWidth": { "$ref": "#/$defs/size" } }
+    },
+    "inputProps": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "placeholder": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "width": { "$ref": "#/$defs/size" } }
+    },
+    "buttonProps": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "text": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "fillWidth": { "type": "boolean" }, "defaultButton": { "type": "boolean" } }
+    },
+    "bind": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "value": { "$ref": "#/$defs/identifier" }, "text": { "$ref": "#/$defs/identifier" },
+        "visible": { "$ref": "#/$defs/identifier" }, "disabled": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "validation": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "required": { "type": "boolean" }, "email": { "type": "boolean" },
+        "minLength": { "$ref": "#/$defs/size" }, "maxLength": { "$ref": "#/$defs/size" }, "label": { "type": "string" }
+      }
+    },
+    "format": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false, "required": ["kind", "pattern"],
+          "properties": {
+            "kind": { "const": "mask" }, "pattern": { "type": "string", "pattern": "^[# .()/+\\-]*#[# .()/+\\-]*$" }, "store": { "const": "digits" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["kind", "currency"],
+          "properties": { "kind": { "const": "currency" }, "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }, "locale": { "type": "string" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["kind"],
+          "properties": { "kind": { "const": "number" }, "locale": { "type": "string" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["kind"],
+          "properties": { "kind": { "enum": ["uppercase", "lowercase"] } }
+        }
+      ]
+    },
+    "node": {
+      "type": "object", "additionalProperties": false, "required": ["type"],
+      "properties": {
+        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button"] },
+        "id": { "$ref": "#/$defs/identifier" }, "props": { "type": "object" },
+        "style": { "$ref": "#/$defs/style" }, "bind": { "$ref": "#/$defs/bind" },
+        "format": { "$ref": "#/$defs/format" }, "validation": { "$ref": "#/$defs/validation" },
+        "events": { "type": "object" }, "children": { "type": "array", "items": { "$ref": "#/$defs/node" } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "enum": ["Column", "Row", "Container"] } } },
+          "then": { "properties": { "props": { "$ref": "#/$defs/layoutProps" }, "style": { "maxProperties": 0 }, "format": false, "validation": { "maxProperties": 0 }, "events": { "maxProperties": 0 }, "bind": { "properties": { "value": false, "text": false } } } },
+          "else": { "properties": { "children": false } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "Text" } } },
+          "then": { "properties": { "props": { "$ref": "#/$defs/textProps" }, "validation": { "maxProperties": 0 }, "events": { "maxProperties": 0 }, "bind": { "properties": { "value": false } } } }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["Input", "PasswordInput"] } } },
+          "then": { "required": ["bind"], "properties": { "props": { "$ref": "#/$defs/inputProps" }, "bind": { "required": ["value"], "properties": { "text": false } }, "events": { "additionalProperties": false, "properties": { "onEnter": { "$ref": "#/$defs/identifier" } } } } }
+        },
+        { "if": { "properties": { "type": { "const": "PasswordInput" } } }, "then": { "properties": { "format": false } } },
+        {
+          "if": { "properties": { "type": { "const": "Button" } } },
+          "then": {
+            "properties": { "props": { "$ref": "#/$defs/buttonProps" }, "format": false, "validation": { "maxProperties": 0 }, "bind": { "properties": { "value": false } }, "events": { "additionalProperties": false, "properties": { "onClick": { "$ref": "#/$defs/identifier" } } } },
+            "anyOf": [ { "required": ["props"], "properties": { "props": { "required": ["text"] } } }, { "required": ["bind"], "properties": { "bind": { "required": ["text"] } } } ]
+          }
+        }
+      ]
+    }
+  }
+}

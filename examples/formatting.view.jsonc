@@ -1,0 +1,20 @@
+{
+  "$schema": "../schema/view.schema.json",
+  "version": 1,
+  "id": "formatting",
+  "states": {
+    "cpf": { "type": "string", "initial": "" },
+    "nome": { "type": "string", "initial": "" },
+    "total": { "type": "decimal", "initial": "1234.56" }
+  },
+  "view": {
+    "type": "Column",
+    "props": { "padding": 24, "spacing": 12 },
+    "children": [
+      { "type": "Text", "props": { "text": "Formatação declarativa" }, "style": { "fontSize": 24, "bold": true } },
+      { "type": "Input", "bind": { "value": "cpf" }, "props": { "placeholder": "CPF" }, "format": { "kind": "mask", "pattern": "###.###.###-##", "store": "digits" } },
+      { "type": "Input", "bind": { "value": "nome" }, "props": { "placeholder": "Nome em maiúsculas" }, "format": { "kind": "uppercase" } },
+      { "type": "Text", "bind": { "text": "total" }, "format": { "kind": "currency", "currency": "BRL", "locale": "pt-BR" } }
+    ]
+  }
+}

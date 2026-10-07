@@ -1,0 +1,86 @@
+package megalodonte.jsonc;
+
+import org.junit.jupiter.api.Test;
+import java.math.BigDecimal;
+import static org.junit.jupiter.api.Assertions.*;
+
+class DefinitionTest {
+    @Test void shippedExampleAndSchemaAreValidDocuments() throws Exception {
+        try (var session = UiDefinition.fromPath(java.nio.file.Path.of("examples/formatting.view.jsonc")).open(new Actions())) {
+            assertEquals(new BigDecimal("1234.56"), session.states().get("total"));
+        }
+        var schema = Jsonc.parse(java.nio.file.Files.readString(java.nio.file.Path.of("schema/view.schema.json")));
+        assertEquals("Megalodonte JSONC UI v1", schema.get("title").getAsString());
+    }
+    static String document(String states, String view) {
+        return "{\"version\":1,\"id\":\"test\",\"states\":" + states + ",\"view\":" + view + "}";
+    }
+    static UiSession open(String states, String view) { return UiDefinition.parse(document(states, view)).open(new Actions()); }
+
+    @Test void commentsPreserveStringsAndSourceCoordinates() {
+        String jsonc = """
+                {
+                  // a line comment
+                  "version":1, /* a block\n comment */ "id":"test",
+                  "states":{"url":{"type":"string","initial":"https://example.com/a/*literal*/"}},
+                  "view":{"type":"Text","bind":{"text":"url"}}
+                }
+                """;
+        try (var session = UiDefinition.parse(jsonc).open(new Actions())) {
+            assertEquals("https://example.com/a/*literal*/", session.states().get("url"));
+        }
+        assertThrows(UiException.class, () -> Jsonc.parse("{/*"));
+        assertThrows(UiException.class, () -> Jsonc.parse("{\n // comment\n \"x\": }"));
+        String literal = "quoted \"value\" // not a comment \\ end";
+        String encoded = new com.google.gson.JsonPrimitive(literal).toString();
+        assertEquals(literal, Jsonc.parse("{\"x\":" + encoded + "}").get("x").getAsString());
+    }
+    @Test void rejectsNonJsonSyntaxDuplicatesAndTrailingContent() {
+        for (String source : new String[]{"{\"x\":1,}", "{\"x\":[1,]}", "{\"x\":1,\"x\":2}", "{} {}", "{x:1}", "{\"x\":NaN}"})
+            assertThrows(UiException.class, () -> Jsonc.parse(source), source);
+    }
+    @Test void statesAreTypedIndependentAndNotMutableAfterClose() {
+        String states = "{\"amount\":{\"type\":\"decimal\",\"initial\":\"0.10\"},\"count\":{\"type\":\"integer\",\"initial\":0}}";
+        var definition = UiDefinition.parse(document(states, "{\"type\":\"Text\"}"));
+        try (var a = definition.open(new Actions()); var b = definition.open(new Actions())) {
+            a.states().set("amount", new BigDecimal("0.20"));
+            assertEquals(new BigDecimal("0.10"), b.states().get("amount"));
+            assertThrows(UiException.class, () -> a.states().set("count", "wrong"));
+            assertThrows(UiException.class, () -> a.states().string("count"));
+            var retained = a.states().state("count", Integer.class);
+            a.close();
+            assertThrows(IllegalStateException.class, () -> retained.set(1));
+        }
+        assertThrows(UiException.class, () -> open("{\"n\":{\"type\":\"integer\",\"initial\":1.5}}", "{\"type\":\"Text\"}"));
+    }
+    @Test void rejectsInvalidReferencesAndIgnoredConfigurationBeforeRendering() {
+        String states = "{\"email\":{\"type\":\"string\",\"initial\":\"\"}}";
+        for (String view : new String[]{
+                "{\"type\":\"Input\",\"bind\":{\"value\":\"missing\"}}",
+                "{\"type\":\"Input\"}",
+                "{\"type\":\"Button\",\"props\":{\"text\":\"go\"},\"events\":{\"onClick\":\"missing\"}}",
+                "{\"type\":\"Text\",\"props\":{\"typo\":1}}",
+                "{\"type\":\"Text\",\"bind\":{\"visible\":\"email\"}}",
+                "{\"type\":\"Text\",\"props\":{\"text\":\"x\"},\"bind\":{\"text\":\"email\"}}",
+                "{\"type\":\"Input\",\"bind\":{\"value\":\"email\"},\"format\":{\"kind\":\"currency\",\"currency\":\"BRL\"}}",
+                "{\"type\":\"Column\",\"children\":[{\"type\":\"Text\",\"id\":\"same\"},{\"type\":\"Text\",\"id\":\"same\"}]}"})
+            assertThrows(UiException.class, () -> open(states, view), view);
+    }
+    @Test void validatesRequiredEmailAndLength() {
+        String states = "{\"email\":{\"type\":\"string\",\"initial\":\"\"}}";
+        try (var session = open(states, "{\"type\":\"Input\",\"bind\":{\"value\":\"email\"},\"validation\":{\"required\":true,\"email\":true,\"maxLength\":30}}")) {
+            assertFalse(session.validate().isEmpty());
+            session.states().string("email").set("bad"); assertFalse(session.validate().isEmpty());
+            session.states().string("email").set("a@b.com"); assertTrue(session.validate().isEmpty());
+            session.states().string("email").set("a".repeat(30) + "@b.com"); assertFalse(session.validate().isEmpty());
+        }
+    }
+    @Test void formatsMasksAndCurrencyWithoutChangingNumericState() {
+        var mask = Jsonc.parse("{\"kind\":\"mask\",\"pattern\":\"###.###.###-##\",\"store\":\"digits\"}");
+        assertEquals("123.456.789-01", Formats.display("12345678901", mask));
+        assertEquals("12345678901", Formats.storage("123.456.789-01999", mask));
+        assertEquals("123", Formats.display("123", mask));
+        var currency = Jsonc.parse("{\"kind\":\"currency\",\"currency\":\"BRL\",\"locale\":\"pt-BR\"}");
+        assertTrue(Formats.display(new BigDecimal("1234.56"), currency).contains("1.234,56"));
+    }
+}
