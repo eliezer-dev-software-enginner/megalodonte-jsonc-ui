@@ -132,3 +132,22 @@ Esta versão cobre telas estáticas com estados reativos, validação e formata�
 Listas dinâmicas, computed states declarativos, estados globais, templates, navegação
 declarativa, novos componentes e hot reload são extensões futuras. O aplicativo cliente
 vizinho é o exemplo executável e o ponto de partida para evoluir o contrato.
+
+## Controles de roteiro e sequência de imagens
+
+`TextArea` oferece texto multilinha com `bind.value` string em duas vias e
+`props.placeholder`, `width`, `height`. Aceita as validações de entrada; não aceita
+formatadores nem `onEnter` (Enter insere uma linha).
+
+`ImagePreview` recebe `bind.source` string com caminho de imagem local e
+`props.width`/`height`. Preserva proporção e apresenta um placeholder se não puder
+ler a imagem. Não busca URLs remotas.
+
+`ImageSequence` recebe `bind.items` string contendo um array JSON de objetos
+`{label, source, duration}` e `bind.selected` integer com índice da seleção
+(`-1` representa nenhuma seleção). `duration` deve ser finita e positiva.
+Miniaturas são ordenadas pelo array; `events.onSelect` é opcional e dispara após
+seleção pelo mouse ou Enter/Espaço. Os intervalos são cumulativos. Width/height
+controlam o viewport, que permite rolagem horizontal. O aplicativo consumidor
+valida os dados antes de publicá-los no estado. Todos os listeners e assinaturas
+seguem o ciclo de vida da sessão. Veja `megalodonte-video-editor` para um consumidor.

@@ -61,6 +61,7 @@
       "type": "object", "additionalProperties": false,
       "properties": { "placeholder": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "width": { "$ref": "#/$defs/size" } }
     },
+    "mediaProps": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}}},
     "buttonProps": {
       "type": "object", "additionalProperties": false,
       "properties": { "text": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "fillWidth": { "type": "boolean" }, "defaultButton": { "type": "boolean" } }
@@ -69,7 +70,8 @@
       "type": "object", "additionalProperties": false,
       "properties": {
         "value": { "$ref": "#/$defs/identifier" }, "text": { "$ref": "#/$defs/identifier" },
-        "visible": { "$ref": "#/$defs/identifier" }, "disabled": { "$ref": "#/$defs/identifier" }
+        "visible": { "$ref": "#/$defs/identifier" }, "disabled": { "$ref": "#/$defs/identifier" },
+        "source": { "$ref": "#/$defs/identifier" }, "items": { "$ref": "#/$defs/identifier" }, "selected": { "$ref": "#/$defs/identifier" }
       }
     },
     "validation": {
@@ -104,7 +106,7 @@
     "node": {
       "type": "object", "additionalProperties": false, "required": ["type"],
       "properties": {
-        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button"] },
+        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button", "TextArea", "ImagePreview", "ImageSequence"] },
         "id": { "$ref": "#/$defs/identifier" }, "props": { "type": "object" },
         "style": { "$ref": "#/$defs/style" }, "bind": { "$ref": "#/$defs/bind" },
         "format": { "$ref": "#/$defs/format" }, "validation": { "$ref": "#/$defs/validation" },
@@ -131,7 +133,13 @@
             "properties": { "props": { "$ref": "#/$defs/buttonProps" }, "format": false, "validation": { "maxProperties": 0 }, "bind": { "properties": { "value": false } }, "events": { "additionalProperties": false, "properties": { "onClick": { "$ref": "#/$defs/identifier" } } } },
             "anyOf": [ { "required": ["props"], "properties": { "props": { "required": ["text"] } } }, { "required": ["bind"], "properties": { "bind": { "required": ["text"] } } } ]
           }
-        }
+        },
+        {"if": {"properties": {"type": {"const": "TextArea"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/inputProps"}, "bind": {"required": ["value"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
+        {"if": {"properties": {"type": {"const": "ImagePreview"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["source"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
+        {"if": {"properties": {"type": {"const": "ImageSequence"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["items", "selected"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {"onSelect": {"$ref": "#/$defs/identifier"}}}}}},
+        {"if": {"properties": {"type": {"not": {"const": "ImagePreview"}}}}, "then": {"properties": {"bind": {"properties": {"source": false}}}}},
+        {"if": {"properties": {"type": {"not": {"const": "ImageSequence"}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
+        {"if": {"properties": {"type": {"not": {"const": "ImageSequence"}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}}
       ]
     }
   }

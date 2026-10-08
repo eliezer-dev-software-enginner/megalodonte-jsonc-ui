@@ -46,6 +46,7 @@ final class Renderer {
                 session.cleanup(() -> node.setOnAction(null));
                 yield button;
             }
+            case "TextArea", "ImagePreview", "ImageSequence" -> MediaNodes.render(type, props, bind, events, session);
             case "Input", "PasswordInput" -> {
                 var themedInput = new ThemeProps.Input();
                 themedInput.automaticWidth = !props.has("width");
@@ -69,7 +70,7 @@ final class Renderer {
                 if (node instanceof VBox box) box.setAlignment(alignment);
                 if (node instanceof HBox box) box.setAlignment(alignment);
             }
-            if (flag(props, "fillWidth") && node instanceof Region region) { region.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(node, Priority.ALWAYS); }
+            if (flag(props, "fillWidth") && node instanceof Region region) { region.setMinWidth(0); region.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(node, Priority.ALWAYS); }
             if (flag(props, "fillHeight") && node instanceof Region region) { region.setMaxHeight(Double.MAX_VALUE); VBox.setVgrow(node, Priority.ALWAYS); }
             if (props.has("bgColor")) megalodonte.styles.util.StyleUtils.applyBackgroundStyling(node, megalodonte.base.theme.ThemeManager.theme(), props.get("bgColor").getAsString());
         }
