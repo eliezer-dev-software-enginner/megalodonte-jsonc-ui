@@ -22,6 +22,16 @@ final class Renderer {
                 bind = Values.optional(spec, "bind", "view"), format = Values.optional(spec, "format", "view"),
                 events = Values.optional(spec, "events", "view");
         Component component = switch (type) {
+            case "Scroll" -> {
+                var scroll = new megalodonte.components.v2.Scroll(render(spec.getAsJsonArray("children").get(0).getAsJsonObject()));
+                var region = (Region) scroll.getJavaFxNode();
+                region.setMinSize(0,0); region.setMaxSize(Double.MAX_VALUE,Double.MAX_VALUE);
+                if (props.has("width")) region.setPrefWidth(props.get("width").getAsInt());
+                if (props.has("height")) region.setPrefHeight(props.get("height").getAsInt());
+                if (flag(props,"fillWidth")) HBox.setHgrow(region,Priority.ALWAYS);
+                if (flag(props,"fillHeight")) VBox.setVgrow(region,Priority.ALWAYS);
+                yield scroll;
+            }
             case "Column" -> themed(Component.CreateFromJavaFxNode(new VBox()), layout(new ThemeProps.Column(), props));
             case "Row" -> themed(Component.CreateFromJavaFxNode(new HBox()), layout(new ThemeProps.Row(), props));
             case "Container" -> themed(Component.CreateFromJavaFxNode(new VBox()), layout(new ThemeProps.Container(), props));

@@ -151,3 +151,12 @@ seleção pelo mouse ou Enter/Espaço. Os intervalos são cumulativos. Width/hei
 controlam o viewport, que permite rolagem horizontal. O aplicativo consumidor
 valida os dados antes de publicá-los no estado. Todos os listeners e assinaturas
 seguem o ciclo de vida da sessão. Veja `megalodonte-video-editor` para um consumidor.
+
+
+`Scroll` aceita exatamente um filho em `children` e props `width`, `height`,
+`fillWidth`, `fillHeight`. Usa `megalodonte.components.v2.Scroll` para rolagem
+vertical com viewport recortado e barra própria. `ImageSequence` agora usa
+`megalodonte.components.v2.HorizontalScroll`, com roda do mouse, gesto horizontal,
+barra arrastável e navegação pelas setas/Home/End, sem criar ScrollPane.
+`ImagePreview` centraliza um quadro horizontal 16:9 dentro da área disponível;
+imagens são encaixadas preservando proporção, com barras pretas quando necessário.

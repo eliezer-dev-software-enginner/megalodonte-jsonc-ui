@@ -46,11 +46,12 @@ public final class UiDefinition {
         Values.keys(node, path, "type", "id", "props", "style", "bind", "format", "events", "validation", "children");
         String type = Values.string(node.get("type"), path + ".type");
         boolean layout = Set.of("Column", "Row", "Container").contains(type);
+        boolean scroll = type.equals("Scroll");
         boolean input = Set.of("Input", "PasswordInput", "TextArea").contains(type);
-        if (!layout && !input && !Set.of("Text", "Button", "ImagePreview", "ImageSequence").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
+        if (!layout && !scroll && !input && !Set.of("Text", "Button", "ImagePreview", "ImageSequence").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
-        String[] allowed = layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
+        String[] allowed = scroll ? new String[]{"width", "height", "fillWidth", "fillHeight"} : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
                 : input ? new String[]{"placeholder", "height", "width"}
                 : Set.of("ImagePreview", "ImageSequence").contains(type) ? new String[]{"height", "width"}
                 : type.equals("Button") ? new String[]{"text", "height", "fillWidth", "defaultButton"} : new String[]{"text", "wrapWidth"};
@@ -64,7 +65,7 @@ public final class UiDefinition {
         if (props.has("alignment") && !Set.of("start", "center", "end").contains(props.get("alignment").getAsString()))
             throw new UiException(path + ".props.alignment", "Expected start, center or end");
         JsonObject style = Values.optional(node, "style", path);
-        if (layout && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
+        if ((layout || scroll) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
         Values.keys(style, path + ".style", "fontSize", "bold", "textColor", "fontFamily");
         style.asMap().forEach((key, value) -> {
             String p = path + ".style." + key;
@@ -112,9 +113,11 @@ public final class UiDefinition {
             else if (Values.integer(value, p) < 0) throw new UiException(p, "Must be nonnegative");
         });
         if (rules.has("minLength") && rules.has("maxLength") && rules.get("minLength").getAsInt() > rules.get("maxLength").getAsInt()) throw new UiException(path + ".validation", "minLength exceeds maxLength");
+        if (scroll && !node.has("children")) throw new UiException(path + ".children", "Scroll requires exactly one child");
         if (node.has("children")) {
-            if (!layout || !node.get("children").isJsonArray()) throw new UiException(path + ".children", "Only layouts accept an array of children");
+            if ((!layout && !scroll) || !node.get("children").isJsonArray()) throw new UiException(path + ".children", "Only layouts accept an array of children");
             JsonArray children = node.getAsJsonArray("children");
+            if (scroll && children.size() != 1) throw new UiException(path + ".children", "Scroll requires exactly one child");
             for (int i = 0; i < children.size(); i++) validateNode(Values.object(children.get(i), path + ".children[" + i + "]"), path + ".children[" + i + "]", states, actions, ids, depth + 1);
         }
     }

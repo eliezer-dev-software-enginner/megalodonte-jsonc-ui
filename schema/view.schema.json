@@ -106,7 +106,7 @@
     "node": {
       "type": "object", "additionalProperties": false, "required": ["type"],
       "properties": {
-        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button", "TextArea", "ImagePreview", "ImageSequence"] },
+        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button", "TextArea", "ImagePreview", "ImageSequence", "Scroll"] },
         "id": { "$ref": "#/$defs/identifier" }, "props": { "type": "object" },
         "style": { "$ref": "#/$defs/style" }, "bind": { "$ref": "#/$defs/bind" },
         "format": { "$ref": "#/$defs/format" }, "validation": { "$ref": "#/$defs/validation" },
@@ -114,7 +114,7 @@
       },
       "allOf": [
         {
-          "if": { "properties": { "type": { "enum": ["Column", "Row", "Container"] } } },
+          "if": { "properties": { "type": { "enum": ["Column", "Row", "Container", "Scroll"] } } },
           "then": { "properties": { "props": { "$ref": "#/$defs/layoutProps" }, "style": { "maxProperties": 0 }, "format": false, "validation": { "maxProperties": 0 }, "events": { "maxProperties": 0 }, "bind": { "properties": { "value": false, "text": false } } } },
           "else": { "properties": { "children": false } }
         },
@@ -139,7 +139,8 @@
         {"if": {"properties": {"type": {"const": "ImageSequence"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["items", "selected"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {"onSelect": {"$ref": "#/$defs/identifier"}}}}}},
         {"if": {"properties": {"type": {"not": {"const": "ImagePreview"}}}}, "then": {"properties": {"bind": {"properties": {"source": false}}}}},
         {"if": {"properties": {"type": {"not": {"const": "ImageSequence"}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
-        {"if": {"properties": {"type": {"not": {"const": "ImageSequence"}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}}
+        {"if": {"properties": {"type": {"not": {"const": "ImageSequence"}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}},
+        {"if": {"properties": {"type": {"const": "Scroll"}}}, "then": {"required": ["children"], "properties": {"children": {"minItems": 1, "maxItems": 1}, "props": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}, "fillWidth": {"type": "boolean"}, "fillHeight": {"type": "boolean"}}}}}}
       ]
     }
   }

@@ -12,6 +12,7 @@ import java.nio.file.*;
 final class MediaNodes {
     static Component render(String type, JsonObject props, JsonObject bind, JsonObject events, UiSession session) {
         javafx.scene.Node node;
+        Component nativeComponent = null;
         if (type.equals("TextArea")) {
             var area = new TextArea();
             area.setWrapText(true);
@@ -26,10 +27,19 @@ final class MediaNodes {
             var image = new ImageView(); image.setPreserveRatio(true);
             var placeholder = new Label("Selecione uma cena e importe uma imagem");
             placeholder.setStyle("-fx-text-fill: #c9d4e6;");
-            var pane = new StackPane(image, placeholder);
+            var frame = new StackPane(image, placeholder);
+            frame.setId("videoFrame"); frame.setManaged(false);
+            var pane = new Pane(frame) {
+                @Override protected void layoutChildren() {
+                    double width = Math.min(getWidth(), getHeight() * 16.0 / 9);
+                    double height = width * 9 / 16;
+                    frame.resizeRelocate((getWidth()-width)/2, (getHeight()-height)/2, width, height);
+                }
+            };
+            frame.setStyle("-fx-background-color: #000000;");
             pane.setStyle("-fx-background-color: #151b28; -fx-background-radius: 8;");
-            image.fitWidthProperty().bind(pane.widthProperty().subtract(24));
-            image.fitHeightProperty().bind(pane.heightProperty().subtract(24));
+            image.fitWidthProperty().bind(frame.widthProperty());
+            image.fitHeightProperty().bind(frame.heightProperty());
             session.observe(session.states().string(bind.get("source").getAsString()), source -> {
                 var loaded = localImage(source, 1600, 900);
                 image.setImage(loaded); placeholder.setVisible(loaded == null);
@@ -38,7 +48,7 @@ final class MediaNodes {
             node = pane;
         } else {
             var cards = new HBox(8); cards.setPadding(new Insets(12));
-            var scroll = new ScrollPane(cards); scroll.setFitToHeight(true);
+            var scroll = new megalodonte.components.v2.HorizontalScroll(Component.CreateFromJavaFxNode(cards));
             var selected = session.states().state(bind.get("selected").getAsString(), Integer.class);
             Runnable highlight = () -> {
                 for (int i = 0; i < cards.getChildren().size(); i++) cards.getChildren().get(i).setStyle(
@@ -62,11 +72,11 @@ final class MediaNodes {
                     card.setOnKeyPressed(event -> { if (event.getCode() == javafx.scene.input.KeyCode.ENTER || event.getCode() == javafx.scene.input.KeyCode.SPACE) { choose.run(); event.consume(); } });
                     cards.getChildren().add(card); start += duration;
                 }
-                highlight.run();
+                scroll.refresh(); highlight.run();
             });
-            session.observe(selected, value -> highlight.run());
+            session.observe(selected, value -> { highlight.run(); if (value >= 0 && value < cards.getChildren().size()) scroll.reveal(cards.getChildren().get(value)); });
             session.cleanup(() -> cards.getChildren().clear());
-            node = scroll;
+            node = scroll.getJavaFxNode(); nativeComponent = scroll;
         }
         if (node instanceof Region region) {
             region.setMinWidth(0);
@@ -74,7 +84,7 @@ final class MediaNodes {
             if (props.has("width")) region.setPrefWidth(props.get("width").getAsDouble());
             else { region.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(region, Priority.ALWAYS); }
         }
-        return Component.CreateFromJavaFxNode(node);
+        return nativeComponent == null ? Component.CreateFromJavaFxNode(node) : nativeComponent;
     }
     private static Image localImage(String source, double width, double height) {
         if (source.isBlank()) return null;
