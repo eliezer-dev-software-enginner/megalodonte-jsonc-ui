@@ -41,7 +41,8 @@
         "fontSize": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
         "bold": { "type": "boolean" },
         "textColor": { "type": "string" },
-        "fontFamily": { "type": "string" }
+        "fontFamily": { "type": "string" },
+        "bgColor": { "type": "string" }
       }
     },
     "layoutProps": {
@@ -143,6 +144,7 @@
         {"if": {"properties": {"type": {"not": {"const": "ImagePreview"}}}}, "then": {"properties": {"bind": {"properties": {"source": false}}}}},
         {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList"]}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
         {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList"]}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}},
+        {"if": {"properties": {"type": {"not": {"const": "Button"}}}}, "then": {"properties": {"style": {"properties": {"bgColor": false}}}}},
         {"if": {"properties": {"type": {"const": "Scroll"}}}, "then": {"required": ["children"], "properties": {"children": {"minItems": 1, "maxItems": 1}, "props": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}, "fillWidth": {"type": "boolean"}, "fillHeight": {"type": "boolean"}}}}}}
       ]
     }

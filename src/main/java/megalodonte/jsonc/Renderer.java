@@ -9,7 +9,7 @@ import megalodonte.base.components.Component;
 import megalodonte.base.scale.ScaleProvider;
 import megalodonte.base.state.*;
 import megalodonte.components.Text;
-import megalodonte.components.inputs.InputBase;
+import megalodonte.components.inputs.NativeTextInput;
 import megalodonte.props.*;
 
 final class Renderer {
@@ -32,9 +32,9 @@ final class Renderer {
                 if (flag(props,"fillHeight")) VBox.setVgrow(region,Priority.ALWAYS);
                 yield scroll;
             }
-            case "Column" -> themed(Component.CreateFromJavaFxNode(new VBox()), layout(new ThemeProps.Column(), props));
-            case "Row" -> themed(Component.CreateFromJavaFxNode(new HBox()), layout(new ThemeProps.Row(), props));
-            case "Container" -> themed(Component.CreateFromJavaFxNode(new VBox()), layout(new ThemeProps.Container(), props));
+            case "Column" -> { var p = layout(new ThemeProps.Column(), props); if (flag(props, "fillWidth")) p.fillWidth(); if (flag(props, "fillHeight")) p.fillHeight(); yield themed(new megalodonte.components.layout_components.Column(p, false), p); }
+            case "Row" -> { var p = layout(new ThemeProps.Row(), props); if (flag(props, "fillWidth")) p.fillWidth(); if (flag(props, "fillHeight")) p.fillHeight(); yield themed(new megalodonte.components.layout_components.Row(p, false), p); }
+            case "Container" -> { var p = layout(new ThemeProps.Container(), props); if (flag(props, "fillHeight")) p.fillHeight(); yield themed(new megalodonte.components.layout_components.Container(p, false), p); }
             case "Text" -> {
                 Text text = new Text(bind.has("text") ? "" : Formats.display(Values.string(props, "text", ""), format), null);
                 themed(text, textStyle(new ThemeProps.Text(), style));
@@ -45,6 +45,7 @@ final class Renderer {
             }
             case "Button" -> {
                 ButtonProps bp = textStyle(new ThemeProps.Button(), style);
+                if (style.has("bgColor")) bp.bgColor(style.get("bgColor").getAsString());
                 if (props.has("height")) bp.height(props.get("height").getAsInt());
                 if (flag(props, "fillWidth")) bp.fillWidth();
                 var button = new megalodonte.components.Button(Values.string(props, "text", ""), null);
@@ -64,8 +65,8 @@ final class Renderer {
                 InputProps ip = textStyle(themedInput, style);
                 if (props.has("height")) ip.height(props.get("height").getAsInt());
                 if (props.has("width")) ip.width(props.get("width").getAsInt());
-                yield new BoundInput(type.equals("PasswordInput"), ip, Values.string(props, "placeholder", ""),
-                        session.states().string(bind.get("value").getAsString()), format, events, session);
+                yield boundInput(type.equals("PasswordInput"), ip, Values.string(props, "placeholder", ""),
+                        session.states().string(bind.get("value").getAsString()), format, events);
             }
             default -> throw new UiException("view.type", "Unknown component: " + type);
         };
@@ -75,7 +76,12 @@ final class Renderer {
             node.setId(id); session.remember(id, component);
         }
         if (java.util.Set.of("Column", "Row", "Container").contains(type)) {
-            if (spec.has("children")) for (JsonElement child : spec.getAsJsonArray("children")) ((Pane) node).getChildren().add(render(child.getAsJsonObject()).getJavaFxNode());
+            if (spec.has("children")) for (JsonElement child : spec.getAsJsonArray("children")) {
+                Component rendered = render(child.getAsJsonObject());
+                if (component instanceof megalodonte.components.layout_components.Column column) column.c_child(rendered);
+                else if (component instanceof megalodonte.components.layout_components.Row row) row.r_child(rendered);
+                else ((megalodonte.components.layout_components.Container) component).c_child(rendered);
+            }
             if (props.has("alignment")) {
                 Pos alignment = switch (props.get("alignment").getAsString()) { case "center" -> Pos.CENTER; case "end" -> Pos.BOTTOM_RIGHT; default -> Pos.TOP_LEFT; };
                 if (node instanceof VBox box) box.setAlignment(alignment);
@@ -118,55 +124,49 @@ final class Renderer {
         session.observe(state, value -> display.accept(Formats.display(value, format)));
     }
 
-    /** Uses the Megalodonte input theme and a native password field with disposable bindings. */
-    private static final class BoundInput extends InputBase {
-        private boolean syncing;
-        BoundInput(boolean password, InputProps props, String placeholder, State<String> state,
-                   JsonObject format, JsonObject events, UiSession session) {
-            super(password ? new PasswordField() : new TextField(), null);
-            this.props = props;
-            session.observe(megalodonte.base.theme.ThemeManager.state(), theme -> {
-                if (theme != null) ((ThemeProps.Themed) props).applyTo(node, theme);
-            });
-            field.setPromptText(placeholder);
-            var stylesheet = getClass().getResource("/text-field.css");
-            if (stylesheet != null) field.getStylesheets().add(stylesheet.toExternalForm());
-            if (!format.isEmpty()) field.setTextFormatter(new TextFormatter<String>(change -> {
-                if (syncing || !change.isContentChange()) return change;
-                String candidate = change.getControlNewText();
-                if (Values.string(format, "kind", "").equals("mask") && change.isDeleted()) {
-                    String oldDigits = Formats.storage(change.getControlText(), format);
-                    if (Formats.storage(candidate, format).equals(oldDigits) && !oldDigits.isEmpty()) {
-                        int before = Formats.storage(change.getControlText().substring(0, change.getRangeStart()), format).length();
-                        int digit = Math.max(0, before - 1);
-                        candidate = oldDigits.substring(0, digit) + oldDigits.substring(digit + 1);
-                    }
+    private NativeTextInput boundInput(boolean password, InputProps props, String placeholder, State<String> state,
+                                       JsonObject format, JsonObject events) {
+        var input = new NativeTextInput(password, null);
+        var field = input.control();
+        themed(input, props);
+        field.setPromptText(placeholder);
+        final boolean[] syncing = {false};
+        if (!format.isEmpty()) field.setTextFormatter(new TextFormatter<String>(change -> {
+            if (syncing[0] || !change.isContentChange()) return change;
+            String candidate = change.getControlNewText();
+            if (Values.string(format, "kind", "").equals("mask") && change.isDeleted()) {
+                String oldDigits = Formats.storage(change.getControlText(), format);
+                if (Formats.storage(candidate, format).equals(oldDigits) && !oldDigits.isEmpty()) {
+                    int before = Formats.storage(change.getControlText().substring(0, change.getRangeStart()), format).length();
+                    int digit = Math.max(0, before - 1);
+                    candidate = oldDigits.substring(0, digit) + oldDigits.substring(digit + 1);
                 }
-                String display = Formats.display(candidate, format);
-                if (!display.equals(change.getControlNewText())) {
-                    change.setRange(0, change.getControlText().length()); change.setText(display);
-                    change.setCaretPosition(display.length()); change.setAnchor(display.length());
-                }
-                return change;
-            }));
-            session.observe(state, value -> {
-                if (syncing) return;
-                syncing = true;
-                try { field.setText(Formats.display(value, format)); } finally { syncing = false; }
-            });
-            javafx.beans.value.ChangeListener<String> listener = (obs, old, value) -> {
-                if (syncing) return;
-                syncing = true;
-                try { state.set(Formats.storage(value, format)); } finally { syncing = false; }
-            };
-            field.textProperty().addListener(listener);
-            if (events.has("onEnter")) ((TextField) field).setOnAction(event -> session.invoke(events.get("onEnter").getAsString()));
-            session.cleanup(() -> {
-                field.textProperty().removeListener(listener);
-                ((TextField) field).setOnAction(null);
-                field.setTextFormatter(null);
-                field.clear();
-            });
-        }
+            }
+            String display = Formats.display(candidate, format);
+            if (!display.equals(change.getControlNewText())) {
+                change.setRange(0, change.getControlText().length()); change.setText(display);
+                change.setCaretPosition(display.length()); change.setAnchor(display.length());
+            }
+            return change;
+        }));
+        session.observe(state, value -> {
+            if (syncing[0]) return;
+            syncing[0] = true;
+            try { field.setText(Formats.display(value, format)); } finally { syncing[0] = false; }
+        });
+        javafx.beans.value.ChangeListener<String> listener = (obs, old, value) -> {
+            if (syncing[0]) return;
+            syncing[0] = true;
+            try { state.set(Formats.storage(value, format)); } finally { syncing[0] = false; }
+        };
+        field.textProperty().addListener(listener);
+        if (events.has("onEnter")) field.setOnAction(event -> session.invoke(events.get("onEnter").getAsString()));
+        session.cleanup(() -> {
+            field.textProperty().removeListener(listener);
+            field.setOnAction(null);
+            field.setTextFormatter(null);
+            field.clear();
+        });
+        return input;
     }
 }

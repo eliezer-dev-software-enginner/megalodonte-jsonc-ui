@@ -67,7 +67,9 @@ public final class UiDefinition {
             throw new UiException(path + ".props.alignment", "Expected start, center or end");
         JsonObject style = Values.optional(node, "style", path);
         if ((layout || scroll || desktop) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
-        Values.keys(style, path + ".style", "fontSize", "bold", "textColor", "fontFamily");
+        Values.keys(style, path + ".style", type.equals("Button")
+                ? new String[]{"fontSize", "bold", "textColor", "fontFamily", "bgColor"}
+                : new String[]{"fontSize", "bold", "textColor", "fontFamily"});
         style.asMap().forEach((key, value) -> {
             String p = path + ".style." + key;
             if (key.equals("fontSize")) { if (Values.integer(value, p) <= 0) throw new UiException(p, "Must be positive"); }

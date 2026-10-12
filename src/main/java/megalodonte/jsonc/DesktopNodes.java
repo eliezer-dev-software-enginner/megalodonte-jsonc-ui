@@ -3,8 +3,8 @@ package megalodonte.jsonc;
 import com.google.gson.*;
 import javafx.scene.layout.*;
 import megalodonte.base.components.Component;
-import megalodonte.jsonc.components.DataList;
-import megalodonte.jsonc.components.DiffView;
+import megalodonte.components.DataList;
+import megalodonte.components.DiffView;
 import java.util.*;
 
 /** Data-oriented desktop bindings with session-owned subscriptions and cleanup. */

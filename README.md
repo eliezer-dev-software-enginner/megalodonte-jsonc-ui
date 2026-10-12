@@ -2,7 +2,10 @@
 
 Biblioteca Java 25/JavaFX 25 que monta telas Megalodonte a partir de arquivos `.view.jsonc`.
 O arquivo declara estados, árvore de componentes, bindings, apresentação e eventos.
-As ações de negócio são funções Java registradas pelo aplicativo.
+As ações de negócio são funções Java registradas pelo aplicativo. Todo nó visual
+é um componente de `megalodonte-components`; esta biblioteca interpreta JSONC,
+valida dados e conecta estado e eventos. Quando um controle faltar, implemente-o
+em `megalodonte-components` antes de expô-lo no JSONC.
 Para um cliente contendo apenas scripts por view, use a biblioteca vizinha
 `megalodonte-script-app`, que automatiza o registro, validação, navegação e bootstrap.
 O exemplo de registro abaixo é a API de baixo nível para integrações personalizadas.

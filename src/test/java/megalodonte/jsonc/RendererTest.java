@@ -132,8 +132,8 @@ class RendererTest {
                 """));
             var session = definition.open(new Actions().register("choose", view -> actions.incrementAndGet()));
             var scene = new Scene((Parent) session.render().getJavaFxNode(), 900, 400);
-            var data = (megalodonte.jsonc.components.DataList) session.component("files");
-            @SuppressWarnings("unchecked") var list = (ListView<megalodonte.jsonc.components.DataList.Item>) data.getJavaFxNode();
+            var data = (megalodonte.components.DataList) session.component("files");
+            @SuppressWarnings("unchecked") var list = (ListView<megalodonte.components.DataList.Item>) data.getJavaFxNode();
             var items = new com.google.gson.JsonArray();
             for (int i=0;i<10000;i++) { var item = new com.google.gson.JsonObject(); item.addProperty("label", "file-"+i); item.addProperty("badge", "M"); items.add(item); }
             session.states().set("items", items.toString());
@@ -146,14 +146,14 @@ class RendererTest {
             assertEquals(27, session.states().get("selected")); assertEquals(1, actions.get());
             session.states().set("items", "[]");
             assertEquals(-1, session.states().get("selected")); assertEquals(1, actions.get());
-            var diff = (megalodonte.jsonc.components.DiffView) session.component("diff");
+            var diff = (megalodonte.components.DiffView) session.component("diff");
             session.states().set("diff", "--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new");
             @SuppressWarnings("unchecked") var lines = (ListView<String>) diff.getJavaFxNode();
             lines.getSelectionModel().selectIndices(3, 4);
             assertEquals("-old\n+new", diff.selectedText());
-            assertEquals(megalodonte.jsonc.components.DiffView.Kind.HEADER, megalodonte.jsonc.components.DiffView.kind("+++ b/file"));
-            assertEquals(megalodonte.jsonc.components.DiffView.Kind.ADDED, megalodonte.jsonc.components.DiffView.kind("+new"));
-            assertEquals(megalodonte.jsonc.components.DiffView.Kind.REMOVED, megalodonte.jsonc.components.DiffView.kind("-old"));
+            assertEquals(megalodonte.components.DiffView.Kind.HEADER, megalodonte.components.DiffView.kind("+++ b/file"));
+            assertEquals(megalodonte.components.DiffView.Kind.ADDED, megalodonte.components.DiffView.kind("+new"));
+            assertEquals(megalodonte.components.DiffView.Kind.REMOVED, megalodonte.components.DiffView.kind("-old"));
             session.close();
             assertTrue(list.getItems().isEmpty()); assertTrue(lines.getItems().isEmpty());
             assertNull(lines.getContextMenu()); assertNull(lines.getOnKeyPressed());
