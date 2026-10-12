@@ -164,3 +164,35 @@ imagens são encaixadas preservando proporção, com barras pretas quando necess
 ### SoundSequence
 
 Faixa declarativa de efeitos sonoros com HorizontalScroll Megalodonte. Usa `bind.items` (JSON string com objetos `label`, `start`, `duration`, `volume`) e `bind.selected` (integer), evento `onSelect` e propriedades `height`/`width`. Mostra régua em segundos, entradas absolutas e sobreposições em linhas separadas. Seleção por clique, Enter ou Espaço.
+
+### DataList e DiffView
+
+Componentes reutilizáveis em `megalodonte.jsonc.components`, com controles de
+plataforma encapsulados no framework e sem WebView. Ambos usam virtualização:
+a quantidade de nós gráficos acompanha o viewport, não a quantidade de linhas.
+Aceitam `props.width`, `height`, `fillWidth`, `fillHeight`.
+
+- `DataList`: `bind.items` string JSON com array de `{label, detail?, badge?}`;
+  `label` é obrigatório, os campos são strings. `bind.selected` integer é o índice
+  (`-1` sem seleção). `events.onSelect` opcional executa após a seleção do usuário,
+  com o estado atualizado. Trocas programáticas dos dados/seleção não disparam
+  ações; uma seleção fora dos limites após trocar os itens é redefinida para -1.
+  Mouse e teclas de navegação selecionam; os itens têm texto acessível.
+- `DiffView`: `bind.text` string com diff unificado. Cabeçalhos, trechos, adições e
+  remoções recebem cores distintas. Permite rolagem, seleção de linhas (inclusive
+  múltiplas), Ctrl+C e menu contextual para copiar linhas ou o diff completo.
+  Texto é literal; nenhum conteúdo é interpretado como HTML ou executado.
+
+```json
+{"type":"DataList","props":{"width":300,"fillHeight":true},
+ "bind":{"items":"files","selected":"fileIndex"},"events":{"onSelect":"selectFile"}}
+```
+```json
+{"type":"DiffView","props":{"fillWidth":true,"fillHeight":true},"bind":{"text":"diff"}}
+```
+
+Arrays são validados antes da substituição visual. Dados/handlers/bindings são
+liberados ao fechar a sessão. Os componentes de desktop têm paleta clara própria;
+esta versão não acompanha mudanças de tema. DiffView seleciona linhas completas,
+não intervalos de caracteres. O produtor deve limitar o tamanho do diff recebido
+para evitar manter textos ilimitados na memória.

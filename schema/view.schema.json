@@ -62,6 +62,7 @@
       "properties": { "placeholder": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "width": { "$ref": "#/$defs/size" } }
     },
     "mediaProps": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}}},
+    "desktopProps": {"type":"object","additionalProperties":false,"properties":{"width":{"$ref":"#/$defs/size"},"height":{"$ref":"#/$defs/size"},"fillWidth":{"type":"boolean"},"fillHeight":{"type":"boolean"}}},
     "buttonProps": {
       "type": "object", "additionalProperties": false,
       "properties": { "text": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "fillWidth": { "type": "boolean" }, "defaultButton": { "type": "boolean" } }
@@ -106,13 +107,15 @@
     "node": {
       "type": "object", "additionalProperties": false, "required": ["type"],
       "properties": {
-        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button", "TextArea", "ImagePreview", "ImageSequence", "SoundSequence", "Scroll"] },
+        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button", "TextArea", "ImagePreview", "ImageSequence", "SoundSequence", "Scroll", "DataList", "DiffView"] },
         "id": { "$ref": "#/$defs/identifier" }, "props": { "type": "object" },
         "style": { "$ref": "#/$defs/style" }, "bind": { "$ref": "#/$defs/bind" },
         "format": { "$ref": "#/$defs/format" }, "validation": { "$ref": "#/$defs/validation" },
         "events": { "type": "object" }, "children": { "type": "array", "items": { "$ref": "#/$defs/node" } }
       },
       "allOf": [
+        {"if":{"properties":{"type":{"const":"DataList"}}},"then":{"required":["bind"],"properties":{"props":{"$ref":"#/$defs/desktopProps"},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"bind":{"required":["items","selected"],"properties":{"value":false,"text":false}},"events":{"additionalProperties":false,"properties":{"onSelect":{"$ref":"#/$defs/identifier"}}}}}},
+        {"if":{"properties":{"type":{"const":"DiffView"}}},"then":{"required":["bind"],"properties":{"props":{"$ref":"#/$defs/desktopProps"},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"bind":{"required":["text"],"properties":{"value":false}},"events":{"maxProperties":0}}}},
         {
           "if": { "properties": { "type": { "enum": ["Column", "Row", "Container", "Scroll"] } } },
           "then": { "properties": { "props": { "$ref": "#/$defs/layoutProps" }, "style": { "maxProperties": 0 }, "format": false, "validation": { "maxProperties": 0 }, "events": { "maxProperties": 0 }, "bind": { "properties": { "value": false, "text": false } } } },
@@ -138,8 +141,8 @@
         {"if": {"properties": {"type": {"const": "ImagePreview"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["source"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
         {"if": {"properties": {"type": {"enum": ["ImageSequence", "SoundSequence"]}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["items", "selected"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {"onSelect": {"$ref": "#/$defs/identifier"}}}}}},
         {"if": {"properties": {"type": {"not": {"const": "ImagePreview"}}}}, "then": {"properties": {"bind": {"properties": {"source": false}}}}},
-        {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence"]}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
-        {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence"]}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}},
+        {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList"]}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
+        {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList"]}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}},
         {"if": {"properties": {"type": {"const": "Scroll"}}}, "then": {"required": ["children"], "properties": {"children": {"minItems": 1, "maxItems": 1}, "props": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}, "fillWidth": {"type": "boolean"}, "fillHeight": {"type": "boolean"}}}}}}
       ]
     }

@@ -83,4 +83,18 @@ class DefinitionTest {
         var currency = Jsonc.parse("{\"kind\":\"currency\",\"currency\":\"BRL\",\"locale\":\"pt-BR\"}");
         assertTrue(Formats.display(new BigDecimal("1234.56"), currency).contains("1.234,56"));
     }
+    @Test void desktopDefinitionsRejectWrongBindingsAndInvalidDataBeforeRendering() {
+        String states = """
+            {"items":{"type":"string","initial":"[]"},"index":{"type":"integer","initial":-1}}
+            """;
+        for (String view : new String[]{
+            "{\"type\":\"DataList\",\"bind\":{\"items\":\"items\"}}",
+            "{\"type\":\"DataList\",\"bind\":{\"items\":\"index\",\"selected\":\"index\"}}",
+            "{\"type\":\"DiffView\",\"bind\":{\"text\":\"index\"}}",
+            "{\"type\":\"DiffView\"}"}) assertThrows(UiException.class, () -> open(states, view));
+        for (String items : new String[]{"{}", "[null]", "[{}]", "[{\"label\":5}]", "[{\"label\":\"a\",\"detail\":null}]", "[{\"label\":\"a\",\"extra\":true}]"})
+            assertThrows(UiException.class, () -> DesktopNodes.parseItems(items));
+        assertEquals("path/with spaces", DesktopNodes.parseItems("[{\"label\":\"path/with spaces\"}]").getFirst().label());
+    }
+
 }

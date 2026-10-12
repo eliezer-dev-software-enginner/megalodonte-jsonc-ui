@@ -117,4 +117,48 @@ class RendererTest {
             }
         });
     }
+    @Test void desktopDataBindingSelectionVirtualizationAndDisposal() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var actions = new AtomicInteger();
+            var definition = UiDefinition.parse(DefinitionTest.document("""
+                {"items":{"type":"string","initial":"[]"},"selected":{"type":"integer","initial":-1},
+                 "diff":{"type":"string","initial":""}}
+                """, """
+                {"type":"Row","children":[
+                  {"type":"DataList","id":"files","props":{"width":300,"height":400,"fillHeight":true},
+                   "bind":{"items":"items","selected":"selected"},"events":{"onSelect":"choose"}},
+                  {"type":"DiffView","id":"diff","props":{"fillWidth":true,"fillHeight":true},"bind":{"text":"diff"}}]}
+                """));
+            var session = definition.open(new Actions().register("choose", view -> actions.incrementAndGet()));
+            var scene = new Scene((Parent) session.render().getJavaFxNode(), 900, 400);
+            var data = (megalodonte.jsonc.components.DataList) session.component("files");
+            @SuppressWarnings("unchecked") var list = (ListView<megalodonte.jsonc.components.DataList.Item>) data.getJavaFxNode();
+            var items = new com.google.gson.JsonArray();
+            for (int i=0;i<10000;i++) { var item = new com.google.gson.JsonObject(); item.addProperty("label", "file-"+i); item.addProperty("badge", "M"); items.add(item); }
+            session.states().set("items", items.toString());
+            scene.getRoot().applyCss(); scene.getRoot().layout();
+            assertEquals(10000, data.items().size());
+            assertTrue(list.lookupAll(".list-cell").size() < 100, "List must create only viewport cells");
+            session.states().set("selected", 15);
+            assertEquals(15, data.selectedIndex()); assertEquals(0, actions.get());
+            list.getSelectionModel().select(27);
+            assertEquals(27, session.states().get("selected")); assertEquals(1, actions.get());
+            session.states().set("items", "[]");
+            assertEquals(-1, session.states().get("selected")); assertEquals(1, actions.get());
+            var diff = (megalodonte.jsonc.components.DiffView) session.component("diff");
+            session.states().set("diff", "--- a/file\n+++ b/file\n@@ -1 +1 @@\n-old\n+new");
+            @SuppressWarnings("unchecked") var lines = (ListView<String>) diff.getJavaFxNode();
+            lines.getSelectionModel().selectIndices(3, 4);
+            assertEquals("-old\n+new", diff.selectedText());
+            assertEquals(megalodonte.jsonc.components.DiffView.Kind.HEADER, megalodonte.jsonc.components.DiffView.kind("+++ b/file"));
+            assertEquals(megalodonte.jsonc.components.DiffView.Kind.ADDED, megalodonte.jsonc.components.DiffView.kind("+new"));
+            assertEquals(megalodonte.jsonc.components.DiffView.Kind.REMOVED, megalodonte.jsonc.components.DiffView.kind("-old"));
+            session.close();
+            assertTrue(list.getItems().isEmpty()); assertTrue(lines.getItems().isEmpty());
+            assertNull(lines.getContextMenu()); assertNull(lines.getOnKeyPressed());
+            assertEquals("", diff.text());
+        });
+    }
+
 }

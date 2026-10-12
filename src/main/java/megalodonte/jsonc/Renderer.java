@@ -56,6 +56,7 @@ final class Renderer {
                 session.cleanup(() -> node.setOnAction(null));
                 yield button;
             }
+            case "DataList", "DiffView" -> DesktopNodes.render(type, props, bind, events, session);
             case "TextArea", "ImagePreview", "ImageSequence", "SoundSequence" -> MediaNodes.render(type, props, bind, events, session);
             case "Input", "PasswordInput" -> {
                 var themedInput = new ThemeProps.Input();
