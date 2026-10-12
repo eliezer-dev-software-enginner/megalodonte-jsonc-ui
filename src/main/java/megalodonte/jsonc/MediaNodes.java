@@ -46,6 +46,39 @@ final class MediaNodes {
             });
             session.cleanup(() -> { image.fitWidthProperty().unbind(); image.fitHeightProperty().unbind(); image.setImage(null); });
             node = pane;
+        } else if(type.equals("SoundSequence")) {
+            var lane=new Pane();lane.setMinHeight(110);
+            var scroll=new megalodonte.components.v2.HorizontalScroll(Component.CreateFromJavaFxNode(lane));
+            var selected=session.states().state(bind.get("selected").getAsString(),Integer.class);
+            Runnable highlight=()-> {
+                for(var nodeItem:lane.getChildren()) if(nodeItem.getUserData() instanceof Integer index)
+                    nodeItem.setStyle("-fx-background-color: "+(selected.get().equals(index) ? "#a6e5dc" : "#d7eee9")+"; -fx-border-color: #368c80; -fx-background-radius: 5; -fx-border-radius: 5;");
+            };
+            session.observe(session.states().string(bind.get("items").getAsString()),json->{
+                lane.getChildren().clear();var items=JsonParser.parseString(json).getAsJsonArray();
+                var ends=new java.util.ArrayList<Double>();double width=600;
+                for(int i=0;i<items.size();i++) {
+                    var item=items.get(i).getAsJsonObject();int index=i;
+                    double start=item.get("start").getAsDouble(),duration=item.get("duration").getAsDouble();
+                    double x=12+start*24,w=Math.max(100,duration*24);int row=0;
+                    while(row<ends.size() && ends.get(row)>x) row++;
+                    if(row==ends.size()) ends.add(0.0);ends.set(row,x+w+4);
+                    var label=new Label(Values.string(item,"label","Som"));label.setMaxWidth(w-12);
+                    var time=new Label(String.format(java.util.Locale.ROOT,"%.1fs → %.1fs · %.0f%%",start,start+duration,item.get("volume").getAsDouble()*100));
+                    var card=new VBox(4,time,label);card.setPadding(new Insets(6));card.setManaged(false);card.resizeRelocate(x,26+row*66,w,60);card.setUserData(index);
+                    card.setFocusTraversable(true);card.setAccessibleText(label.getText()+" "+time.getText());
+                    Tooltip.install(card,new Tooltip(label.getText()+"\n"+time.getText()));
+                    Runnable choose=()->{selected.set(index);if(events.has("onSelect"))session.invoke(events.get("onSelect").getAsString());};
+                    card.setOnMouseClicked(event->choose.run());card.setOnKeyPressed(event->{if(event.getCode()==javafx.scene.input.KeyCode.ENTER || event.getCode()==javafx.scene.input.KeyCode.SPACE){choose.run();event.consume();}});
+                    lane.getChildren().add(card);width=Math.max(width,x+w+12);
+                }
+                for(int second=0;second*24<width;second+=10) { var tick=new Label(second+"s");tick.setManaged(false);tick.resizeRelocate(12+second*24,2,60,20);lane.getChildren().add(tick); }
+                if(items.isEmpty()) {var empty=new Label("Adicione sons para posicioná-los no vídeo");empty.relocate(12,32);lane.getChildren().add(empty);}
+                double height=Math.max(props.has("height") ? props.get("height").getAsDouble() : 170,50+ends.size()*66);
+                lane.setPrefSize(width,height-14);((Region)scroll.getJavaFxNode()).setMinHeight(height);((Region)scroll.getJavaFxNode()).setPrefHeight(height);scroll.refresh();highlight.run();
+            });
+            session.observe(selected,value->{highlight.run();for(var card:lane.getChildren()) if(Integer.valueOf(value).equals(card.getUserData())) scroll.reveal(card);});
+            session.cleanup(()->lane.getChildren().clear());node=scroll.getJavaFxNode();nativeComponent=scroll;
         } else {
             var cards = new HBox(8); cards.setPadding(new Insets(12));
             var scroll = new megalodonte.components.v2.HorizontalScroll(Component.CreateFromJavaFxNode(cards));
@@ -80,7 +113,7 @@ final class MediaNodes {
         }
         if (node instanceof Region region) {
             region.setMinWidth(0);
-            if (props.has("height")) { region.setPrefHeight(props.get("height").getAsDouble()); region.setMinHeight(props.get("height").getAsDouble()); }
+            if (props.has("height")) { double height=type.equals("SoundSequence") ? Math.max(region.getPrefHeight(),props.get("height").getAsDouble()) : props.get("height").getAsDouble();region.setPrefHeight(height);region.setMinHeight(height); }
             if (props.has("width")) region.setPrefWidth(props.get("width").getAsDouble());
             else { region.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(region, Priority.ALWAYS); }
         }

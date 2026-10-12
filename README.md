@@ -160,3 +160,7 @@ vertical com viewport recortado e barra própria. `ImageSequence` agora usa
 barra arrastável e navegação pelas setas/Home/End, sem criar ScrollPane.
 `ImagePreview` centraliza um quadro horizontal 16:9 dentro da área disponível;
 imagens são encaixadas preservando proporção, com barras pretas quando necessário.
+
+### SoundSequence
+
+Faixa declarativa de efeitos sonoros com HorizontalScroll Megalodonte. Usa `bind.items` (JSON string com objetos `label`, `start`, `duration`, `volume`) e `bind.selected` (integer), evento `onSelect` e propriedades `height`/`width`. Mostra régua em segundos, entradas absolutas e sobreposições em linhas separadas. Seleção por clique, Enter ou Espaço.

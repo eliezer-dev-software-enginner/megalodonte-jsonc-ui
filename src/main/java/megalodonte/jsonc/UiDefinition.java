@@ -48,12 +48,12 @@ public final class UiDefinition {
         boolean layout = Set.of("Column", "Row", "Container").contains(type);
         boolean scroll = type.equals("Scroll");
         boolean input = Set.of("Input", "PasswordInput", "TextArea").contains(type);
-        if (!layout && !scroll && !input && !Set.of("Text", "Button", "ImagePreview", "ImageSequence").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
+        if (!layout && !scroll && !input && !Set.of("Text", "Button", "ImagePreview", "ImageSequence", "SoundSequence").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
         String[] allowed = scroll ? new String[]{"width", "height", "fillWidth", "fillHeight"} : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
                 : input ? new String[]{"placeholder", "height", "width"}
-                : Set.of("ImagePreview", "ImageSequence").contains(type) ? new String[]{"height", "width"}
+                : Set.of("ImagePreview", "ImageSequence", "SoundSequence").contains(type) ? new String[]{"height", "width"}
                 : type.equals("Button") ? new String[]{"text", "height", "fillWidth", "defaultButton"} : new String[]{"text", "wrapWidth"};
         Values.keys(props, path + ".props", allowed);
         props.asMap().forEach((key, value) -> {
@@ -80,13 +80,13 @@ public final class UiDefinition {
             Class<?> stateType;
             try { stateType = states.type(name); } catch (UiException e) { throw new UiException(p, "Unknown state: " + name); }
             if (key.equals("source") && (!type.equals("ImagePreview") || stateType != String.class)) throw new UiException(p, "source requires ImagePreview and string state");
-            if (key.equals("items") && (!type.equals("ImageSequence") || stateType != String.class)) throw new UiException(p, "items requires ImageSequence and string JSON state");
-            if (key.equals("selected") && (!type.equals("ImageSequence") || stateType != Integer.class)) throw new UiException(p, "selected requires ImageSequence and integer state");
+            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence").contains(type) || stateType != String.class)) throw new UiException(p, "items requires ImageSequence and string JSON state");
+            if (key.equals("selected") && (!Set.of("ImageSequence", "SoundSequence").contains(type) || stateType != Integer.class)) throw new UiException(p, "selected requires ImageSequence and integer state");
             if (key.equals("value") && (!input || stateType != String.class)) throw new UiException(p, "value requires an input and string state");
             if (key.equals("text") && !Set.of("Text", "Button").contains(type)) throw new UiException(p, "text requires Text or Button");
             if (Set.of("visible", "disabled").contains(key) && stateType != Boolean.class) throw new UiException(p, "Requires boolean state");
         });
-        if (type.equals("ImageSequence") && (!bind.has("items") || !bind.has("selected"))) throw new UiException(path + ".bind", "ImageSequence requires items and selected");
+        if (Set.of("ImageSequence", "SoundSequence").contains(type) && (!bind.has("items") || !bind.has("selected"))) throw new UiException(path + ".bind", "ImageSequence requires items and selected");
         if (type.equals("ImagePreview") && !bind.has("source")) throw new UiException(path + ".bind", "ImagePreview requires source");
         if (input && !bind.has("value")) throw new UiException(path + ".bind.value", "Input requires a state binding");
         if (bind.has("text") && props.has("text")) throw new UiException(path, "Declare either props.text or bind.text");
@@ -98,7 +98,7 @@ public final class UiDefinition {
         if (type.equals("TextArea") && !format.isEmpty()) throw new UiException(path + ".format", "TextArea does not support formatting");
         Formats.validate(format, path + ".format", type, formattedType);
         JsonObject events = Values.optional(node, "events", path);
-        Values.keys(events, path + ".events", type.equals("Button") ? new String[]{"onClick"} : type.equals("ImageSequence") ? new String[]{"onSelect"} : input && !type.equals("TextArea") ? new String[]{"onEnter"} : new String[]{});
+        Values.keys(events, path + ".events", type.equals("Button") ? new String[]{"onClick"} : Set.of("ImageSequence", "SoundSequence").contains(type) ? new String[]{"onSelect"} : input && !type.equals("TextArea") ? new String[]{"onEnter"} : new String[]{});
         events.asMap().forEach((key, value) -> {
             String name = Values.name(value, path + ".events." + key);
             if (!actions.contains(name)) throw new UiException(path + ".events." + key, "Unregistered action: " + name);
