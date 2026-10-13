@@ -49,25 +49,29 @@ public final class UiDefinition {
         boolean scroll = type.equals("Scroll");
         boolean desktop = Set.of("DataList", "DiffView").contains(type);
         boolean input = Set.of("Input", "PasswordInput", "TextArea").contains(type);
-        if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "ImagePreview", "ImageSequence", "SoundSequence").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
+        if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
-        String[] allowed = (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"} : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
+        String[] allowed = (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"}
+                : type.equals("Container") ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor", "bgImage"}
+                : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
                 : type.equals("TextArea") ? new String[]{"placeholder", "height", "width", "readOnly"}
                 : input ? new String[]{"placeholder", "height", "width"}
+                : type.equals("Image") ? new String[]{"source", "height", "width"}
                 : Set.of("ImagePreview", "ImageSequence", "SoundSequence").contains(type) ? new String[]{"height", "width"}
                 : type.equals("Button") ? new String[]{"text", "height", "fillWidth", "defaultButton"} : new String[]{"text", "wrapWidth"};
         Values.keys(props, path + ".props", allowed);
         props.asMap().forEach((key, value) -> {
             String p = path + ".props." + key;
             if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly").contains(key)) Values.bool(value, p);
-            else if (Set.of("text", "placeholder", "alignment", "bgColor").contains(key)) Values.string(value, p);
+            else if (Set.of("text", "placeholder", "alignment", "bgColor", "source", "bgImage").contains(key)) Values.string(value, p);
             else if (Values.integer(value, p) < 0) throw new UiException(p, "Must be nonnegative");
         });
         if (props.has("alignment") && !Set.of("start", "center", "end").contains(props.get("alignment").getAsString()))
             throw new UiException(path + ".props.alignment", "Expected start, center or end");
+        if (type.equals("Image") && !props.has("source")) throw new UiException(path + ".props.source", "Image source is required");
         JsonObject style = Values.optional(node, "style", path);
-        if ((layout || scroll || desktop) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
+        if ((layout || scroll || desktop || type.equals("Image")) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
         Values.keys(style, path + ".style", type.equals("Button")
                 ? new String[]{"fontSize", "bold", "textColor", "fontFamily", "bgColor"}
                 : new String[]{"fontSize", "bold", "textColor", "fontFamily"});

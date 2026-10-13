@@ -46,10 +46,11 @@ All states require a non-null `initial`. Decimals use strings to preserve precis
 
 | Component | Data contract |
 | --- | --- |
-| `Column`, `Row`, `Container` | `children`; spacing, padding, size, alignment, fill and background props |
+| `Column`, `Row`, `Container` | `children`; spacing, padding, size, alignment and fill props. `Container` also accepts a classpath `bgImage` resource. |
 | `Scroll` | Exactly one child; size and fill props |
 | `Text`, `Button` | Text props and optional `bind.text`; text style; buttons can bind `onClick` |
 | `Input`, `PasswordInput`, `TextArea` | String `bind.value`; placeholder/size props; validation. `TextArea` also accepts `props.readOnly` for display-only content. |
+| `Image` | Static classpath `props.source` with optional width and height; rendered by `megalodonte-components`. |
 | `ImagePreview` | Local image path from string `bind.source` |
 | `ImageSequence`, `SoundSequence`, `DataList` | JSON-array string `bind.items`, integer `bind.selected`, optional `onSelect` |
 | `DiffView` | Unified diff string from `bind.text` |

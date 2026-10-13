@@ -26,6 +26,9 @@ final class ThemeProps {
     static final class TextArea extends InputProps implements Themed {
         public void applyTo(Node node, ThemeInterface theme) { super.applyTheme(node, this, theme); }
     }
+    static final class Image extends ImageProps implements Themed {
+        public void applyTo(Node node, ThemeInterface theme) { super.applyTheme(node, this, theme); }
+    }
     static final class Input extends InputProps implements Themed {
         boolean automaticWidth = true;
         public void applyTo(Node node, ThemeInterface theme) {

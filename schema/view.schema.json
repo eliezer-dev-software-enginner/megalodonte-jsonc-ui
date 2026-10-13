@@ -54,6 +54,15 @@
         "alignment": { "enum": ["start", "center", "end"] }, "bgColor": { "type": "string" }
       }
     },
+    "containerProps": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "spacing": { "$ref": "#/$defs/size" }, "padding": { "$ref": "#/$defs/size" },
+        "width": { "$ref": "#/$defs/size" }, "height": { "$ref": "#/$defs/size" }, "maxWidth": { "$ref": "#/$defs/size" },
+        "fillWidth": { "type": "boolean" }, "fillHeight": { "type": "boolean" },
+        "alignment": { "enum": ["start", "center", "end"] }, "bgColor": { "type": "string" }, "bgImage": { "type": "string" }
+      }
+    },
     "textProps": {
       "type": "object", "additionalProperties": false,
       "properties": { "text": { "type": "string" }, "wrapWidth": { "$ref": "#/$defs/size" } }
@@ -67,6 +76,7 @@
       "properties": { "placeholder": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "width": { "$ref": "#/$defs/size" }, "readOnly": { "type": "boolean" } }
     },
     "mediaProps": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}}},
+    "imageProps": {"type": "object", "additionalProperties": false, "required": ["source"], "properties": {"source": {"type": "string"}, "width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}}},
     "desktopProps": {"type":"object","additionalProperties":false,"properties":{"width":{"$ref":"#/$defs/size"},"height":{"$ref":"#/$defs/size"},"fillWidth":{"type":"boolean"},"fillHeight":{"type":"boolean"}}},
     "buttonProps": {
       "type": "object", "additionalProperties": false,
@@ -112,7 +122,7 @@
     "node": {
       "type": "object", "additionalProperties": false, "required": ["type"],
       "properties": {
-        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button", "TextArea", "ImagePreview", "ImageSequence", "SoundSequence", "Scroll", "DataList", "DiffView"] },
+        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "Button", "TextArea", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Scroll", "DataList", "DiffView"] },
         "id": { "$ref": "#/$defs/identifier" }, "props": { "type": "object" },
         "style": { "$ref": "#/$defs/style" }, "bind": { "$ref": "#/$defs/bind" },
         "format": { "$ref": "#/$defs/format" }, "validation": { "$ref": "#/$defs/validation" },
@@ -122,10 +132,12 @@
         {"if":{"properties":{"type":{"const":"DataList"}}},"then":{"required":["bind"],"properties":{"props":{"$ref":"#/$defs/desktopProps"},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"bind":{"required":["items","selected"],"properties":{"value":false,"text":false}},"events":{"additionalProperties":false,"properties":{"onSelect":{"$ref":"#/$defs/identifier"}}}}}},
         {"if":{"properties":{"type":{"const":"DiffView"}}},"then":{"required":["bind"],"properties":{"props":{"$ref":"#/$defs/desktopProps"},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"bind":{"required":["text"],"properties":{"value":false}},"events":{"maxProperties":0}}}},
         {
-          "if": { "properties": { "type": { "enum": ["Column", "Row", "Container", "Scroll"] } } },
-          "then": { "properties": { "props": { "$ref": "#/$defs/layoutProps" }, "style": { "maxProperties": 0 }, "format": false, "validation": { "maxProperties": 0 }, "events": { "maxProperties": 0 }, "bind": { "properties": { "value": false, "text": false } } } },
-          "else": { "properties": { "children": false } }
+          "if": { "properties": { "type": { "enum": ["Column", "Row", "Scroll"] } } },
+          "then": { "properties": { "props": { "$ref": "#/$defs/layoutProps" }, "style": { "maxProperties": 0 }, "format": false, "validation": { "maxProperties": 0 }, "events": { "maxProperties": 0 }, "bind": { "properties": { "value": false, "text": false } } } }
         },
+        {"if": {"properties": {"type": {"not": {"enum": ["Column", "Row", "Container", "Scroll"]}}}}, "then": {"properties": {"children": false}}},
+        {"if": {"properties": {"type": {"const": "Container"}}}, "then": {"properties": {"props": {"$ref": "#/$defs/containerProps"}, "style": {"maxProperties": 0}, "format": false, "validation": {"maxProperties": 0}, "events": {"maxProperties": 0}}}},
+        {"if": {"properties": {"type": {"const": "Image"}}}, "then": {"required": ["props"], "properties": {"props": {"$ref": "#/$defs/imageProps"}, "style": {"maxProperties": 0}, "format": false, "validation": {"maxProperties": 0}, "events": {"maxProperties": 0}}}},
         {
           "if": { "properties": { "type": { "const": "Text" } } },
           "then": { "properties": { "props": { "$ref": "#/$defs/textProps" }, "validation": { "maxProperties": 0 }, "events": { "maxProperties": 0 }, "bind": { "properties": { "value": false } } } }
