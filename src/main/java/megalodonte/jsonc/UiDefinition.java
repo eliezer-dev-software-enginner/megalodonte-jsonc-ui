@@ -69,7 +69,8 @@ public final class UiDefinition {
         });
         if (props.has("alignment") && !Set.of("start", "center", "end").contains(props.get("alignment").getAsString()))
             throw new UiException(path + ".props.alignment", "Expected start, center or end");
-        if (type.equals("Image") && !props.has("source")) throw new UiException(path + ".props.source", "Image source is required");
+        if (type.equals("Image") && !props.has("source") && !Values.optional(node, "bind", path).has("source"))
+            throw new UiException(path + ".props.source", "Image source or binding is required");
         JsonObject style = Values.optional(node, "style", path);
         if ((layout || scroll || desktop || type.equals("Image")) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
         Values.keys(style, path + ".style", type.equals("Button")
@@ -87,7 +88,8 @@ public final class UiDefinition {
             String p = path + ".bind." + key, name = Values.name(value, p);
             Class<?> stateType;
             try { stateType = states.type(name); } catch (UiException e) { throw new UiException(p, "Unknown state: " + name); }
-            if (key.equals("source") && (!type.equals("ImagePreview") || stateType != String.class)) throw new UiException(p, "source requires ImagePreview and string state");
+            if (key.equals("source") && (!Set.of("Image", "ImagePreview").contains(type) || stateType != String.class))
+                throw new UiException(p, "source requires Image or ImagePreview and string state");
             if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) || stateType != String.class)) throw new UiException(p, "items requires ImageSequence and string JSON state");
             if (key.equals("selected") && (!Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) || stateType != Integer.class)) throw new UiException(p, "selected requires ImageSequence and integer state");
             if (key.equals("text") && type.equals("DiffView") && stateType != String.class) throw new UiException(p, "DiffView requires string state");

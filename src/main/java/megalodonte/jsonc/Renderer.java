@@ -36,12 +36,15 @@ final class Renderer {
             case "Row" -> { var p = layout(new ThemeProps.Row(), props); if (flag(props, "fillWidth")) p.fillWidth(); if (flag(props, "fillHeight")) p.fillHeight(); yield themed(new megalodonte.components.layout_components.Row(p, false), p); }
             case "Container" -> { var p = layout(new ThemeProps.Container(), props); if (flag(props, "fillHeight")) p.fillHeight(); if (props.has("bgImage")) p.bgImage(props.get("bgImage").getAsString()); yield themed(new megalodonte.components.layout_components.Container(p, false), p); }
             case "Image" -> {
-                String source = props.get("source").getAsString();
-                var url = Renderer.class.getResource(source);
-                if (url == null) throw new UiException("view.props.source", "Image resource not found: " + source);
                 var imageProps = new ThemeProps.Image();
                 if (props.has("width")) imageProps.width(props.get("width").getAsInt());
                 if (props.has("height")) imageProps.height(props.get("height").getAsInt());
+                if (bind.has("source")) {
+                    yield themed(new megalodonte.components.Image(session.states().string(bind.get("source").getAsString())), imageProps);
+                }
+                String source = props.get("source").getAsString();
+                var url = Renderer.class.getResource(source);
+                if (url == null) throw new UiException("view.props.source", "Image resource not found: " + source);
                 yield themed(new megalodonte.components.Image(url.toExternalForm()), imageProps);
             }
             case "Text" -> {

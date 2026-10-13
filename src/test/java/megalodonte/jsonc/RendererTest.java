@@ -88,6 +88,23 @@ class RendererTest {
             }
         });
     }
+    @Test void imageCanBindSourceAndVisibility() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var definition = UiDefinition.parse(DefinitionTest.document("""
+                    {"logo":{"type":"string","initial":""},"visible":{"type":"boolean","initial":false}}
+                    """, """
+                    {"type":"Image","id":"logoImage","bind":{"source":"logo","visible":"visible"}}
+                    """));
+            try (var session = definition.open(new Actions())) {
+                var image = (javafx.scene.image.ImageView) session.render().getJavaFxNode();
+                assertNull(image.getImage());
+                assertFalse(image.isVisible());
+                session.states().set("visible", true);
+                assertTrue(image.isVisible());
+            }
+        });
+    }
     @Test void maskEditingAndCurrencyDisplay() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());
