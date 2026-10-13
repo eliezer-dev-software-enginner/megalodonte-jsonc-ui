@@ -25,6 +25,7 @@ final class MediaNodes {
                     if (theme != null) textAreaProps.applyTo(control, theme);
                 });
                 control.setWrapText(true);
+                control.setEditable(!props.has("readOnly") || !props.get("readOnly").getAsBoolean());
                 control.setPromptText(Values.string(props, "placeholder", ""));
                 var state = session.states().string(bind.get("value").getAsString());
                 session.observe(state, value -> { if (!control.getText().equals(value)) control.setText(value); });

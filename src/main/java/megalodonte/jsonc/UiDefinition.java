@@ -53,13 +53,14 @@ public final class UiDefinition {
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
         String[] allowed = (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"} : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
+                : type.equals("TextArea") ? new String[]{"placeholder", "height", "width", "readOnly"}
                 : input ? new String[]{"placeholder", "height", "width"}
                 : Set.of("ImagePreview", "ImageSequence", "SoundSequence").contains(type) ? new String[]{"height", "width"}
                 : type.equals("Button") ? new String[]{"text", "height", "fillWidth", "defaultButton"} : new String[]{"text", "wrapWidth"};
         Values.keys(props, path + ".props", allowed);
         props.asMap().forEach((key, value) -> {
             String p = path + ".props." + key;
-            if (Set.of("fillWidth", "fillHeight", "defaultButton").contains(key)) Values.bool(value, p);
+            if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly").contains(key)) Values.bool(value, p);
             else if (Set.of("text", "placeholder", "alignment", "bgColor").contains(key)) Values.string(value, p);
             else if (Values.integer(value, p) < 0) throw new UiException(p, "Must be nonnegative");
         });

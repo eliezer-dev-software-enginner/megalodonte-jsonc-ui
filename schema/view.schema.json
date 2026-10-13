@@ -62,6 +62,10 @@
       "type": "object", "additionalProperties": false,
       "properties": { "placeholder": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "width": { "$ref": "#/$defs/size" } }
     },
+    "textAreaProps": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "placeholder": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "width": { "$ref": "#/$defs/size" }, "readOnly": { "type": "boolean" } }
+    },
     "mediaProps": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}}},
     "desktopProps": {"type":"object","additionalProperties":false,"properties":{"width":{"$ref":"#/$defs/size"},"height":{"$ref":"#/$defs/size"},"fillWidth":{"type":"boolean"},"fillHeight":{"type":"boolean"}}},
     "buttonProps": {
@@ -138,7 +142,7 @@
             "anyOf": [ { "required": ["props"], "properties": { "props": { "required": ["text"] } } }, { "required": ["bind"], "properties": { "bind": { "required": ["text"] } } } ]
           }
         },
-        {"if": {"properties": {"type": {"const": "TextArea"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/inputProps"}, "bind": {"required": ["value"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
+        {"if": {"properties": {"type": {"const": "TextArea"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/textAreaProps"}, "bind": {"required": ["value"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
         {"if": {"properties": {"type": {"const": "ImagePreview"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["source"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
         {"if": {"properties": {"type": {"enum": ["ImageSequence", "SoundSequence"]}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["items", "selected"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {"onSelect": {"$ref": "#/$defs/identifier"}}}}}},
         {"if": {"properties": {"type": {"not": {"const": "ImagePreview"}}}}, "then": {"properties": {"bind": {"properties": {"source": false}}}}},
