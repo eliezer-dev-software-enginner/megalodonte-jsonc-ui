@@ -69,6 +69,37 @@ final class Renderer {
                 session.cleanup(() -> node.setOnAction(null));
                 yield button;
             }
+            case "Select" -> {
+                var selectProps = new ThemeProps.Select();
+                if (props.has("width")) selectProps.minWidth(props.get("width").getAsInt());
+                if (props.has("height")) selectProps.height(props.get("height").getAsInt());
+                var select = themed(new megalodonte.components.Select<String>(), selectProps);
+                @SuppressWarnings("unchecked") var control = (ComboBox<String>) select.getJavaFxNode();
+                var selected = session.states().string(bind.get("value").getAsString());
+                session.observe(session.states().string(bind.get("items").getAsString()), json -> {
+                    var items = new java.util.ArrayList<String>();
+                    try {
+                        for (JsonElement item : JsonParser.parseString(json).getAsJsonArray()) {
+                            if (!item.isJsonPrimitive() || !item.getAsJsonPrimitive().isString())
+                                throw new IllegalArgumentException("Select items must be strings");
+                            items.add(item.getAsString());
+                        }
+                    } catch (RuntimeException error) {
+                        throw new UiException("view.bind.items", "Select items must be a JSON string array");
+                    }
+                    control.getItems().setAll(items);
+                    if (!java.util.Objects.equals(control.getValue(), selected.get())) control.setValue(selected.get());
+                });
+                session.observe(selected, value -> {
+                    if (!java.util.Objects.equals(control.getValue(), value)) control.setValue(value);
+                });
+                javafx.beans.value.ChangeListener<String> listener = (ignored, old, value) -> {
+                    if (value != null && !java.util.Objects.equals(selected.get(), value)) selected.set(value);
+                };
+                control.valueProperty().addListener(listener);
+                session.cleanup(() -> { control.valueProperty().removeListener(listener); control.getItems().clear(); });
+                yield select;
+            }
             case "DataList", "DiffView" -> DesktopNodes.render(type, props, bind, events, session);
             case "TextArea", "ImagePreview", "ImageSequence", "SoundSequence" -> MediaNodes.render(type, props, bind, events, session);
             case "Input", "PasswordInput" -> {

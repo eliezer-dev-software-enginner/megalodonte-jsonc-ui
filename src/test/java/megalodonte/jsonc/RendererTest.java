@@ -105,6 +105,26 @@ class RendererTest {
             }
         });
     }
+    @Test void selectBindsOptionsAndSelectedValue() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var definition = UiDefinition.parse(DefinitionTest.document("""
+                    {"choices":{"type":"string","initial":"[\\\"Serial\\\",\\\"TCP\\\"]"},
+                     "selected":{"type":"string","initial":"Serial"}}
+                    """, """
+                    {"type":"Select","id":"connection","bind":{"items":"choices","value":"selected"}}
+                    """));
+            try (var session = definition.open(new Actions())) {
+                @SuppressWarnings("unchecked") var control = (ComboBox<String>) session.render().getJavaFxNode();
+                assertEquals(java.util.List.of("Serial", "TCP"), control.getItems());
+                assertEquals("Serial", control.getValue());
+                control.setValue("TCP");
+                assertEquals("TCP", session.states().string("selected").get());
+                session.states().string("choices").set("[\"USB\",\"TCP\"]");
+                assertEquals(java.util.List.of("USB", "TCP"), control.getItems());
+            }
+        });
+    }
     @Test void maskEditingAndCurrencyDisplay() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());

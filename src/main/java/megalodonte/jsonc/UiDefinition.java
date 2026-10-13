@@ -49,13 +49,14 @@ public final class UiDefinition {
         boolean scroll = type.equals("Scroll");
         boolean desktop = Set.of("DataList", "DiffView").contains(type);
         boolean input = Set.of("Input", "PasswordInput", "TextArea").contains(type);
-        if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
+        if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
         String[] allowed = (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"}
                 : type.equals("Container") ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor", "bgImage"}
                 : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
                 : type.equals("TextArea") ? new String[]{"placeholder", "height", "width", "readOnly"}
+                : type.equals("Select") ? new String[]{"height", "width"}
                 : input ? new String[]{"placeholder", "height", "width"}
                 : type.equals("Image") ? new String[]{"source", "height", "width"}
                 : Set.of("ImagePreview", "ImageSequence", "SoundSequence").contains(type) ? new String[]{"height", "width"}
@@ -90,16 +91,18 @@ public final class UiDefinition {
             try { stateType = states.type(name); } catch (UiException e) { throw new UiException(p, "Unknown state: " + name); }
             if (key.equals("source") && (!Set.of("Image", "ImagePreview").contains(type) || stateType != String.class))
                 throw new UiException(p, "source requires Image or ImagePreview and string state");
-            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) || stateType != String.class)) throw new UiException(p, "items requires ImageSequence and string JSON state");
+            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Select").contains(type) || stateType != String.class)) throw new UiException(p, "items requires a list component and string JSON state");
             if (key.equals("selected") && (!Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) || stateType != Integer.class)) throw new UiException(p, "selected requires ImageSequence and integer state");
             if (key.equals("text") && type.equals("DiffView") && stateType != String.class) throw new UiException(p, "DiffView requires string state");
-            if (key.equals("value") && (!input || stateType != String.class)) throw new UiException(p, "value requires an input and string state");
+            if (key.equals("value") && (!(input || type.equals("Select")) || stateType != String.class)) throw new UiException(p, "value requires an input and string state");
             if (key.equals("text") && !Set.of("Text", "Button", "DiffView").contains(type)) throw new UiException(p, "text requires Text or Button");
             if (Set.of("visible", "disabled").contains(key) && stateType != Boolean.class) throw new UiException(p, "Requires boolean state");
         });
         if (Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) && (!bind.has("items") || !bind.has("selected"))) throw new UiException(path + ".bind", "ImageSequence requires items and selected");
         if (type.equals("DiffView") && !bind.has("text")) throw new UiException(path + ".bind", "DiffView requires text");
         if (type.equals("DataList")) DesktopNodes.parseItems(states.string(bind.get("items").getAsString()).get());
+        if (type.equals("Select") && (!bind.has("items") || !bind.has("value")))
+            throw new UiException(path + ".bind", "Select requires items and value");
         if (type.equals("ImagePreview") && !bind.has("source")) throw new UiException(path + ".bind", "ImagePreview requires source");
         if (input && !bind.has("value")) throw new UiException(path + ".bind.value", "Input requires a state binding");
         if (bind.has("text") && props.has("text")) throw new UiException(path, "Declare either props.text or bind.text");
