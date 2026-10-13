@@ -1,201 +1,83 @@
 # Megalodonte JSONC UI
 
-Biblioteca Java 25/JavaFX 25 que monta telas Megalodonte a partir de arquivos `.view.jsonc`.
-O arquivo declara estados, árvore de componentes, bindings, apresentação e eventos.
-As ações de negócio são funções Java registradas pelo aplicativo. Todo nó visual
-é um componente de `megalodonte-components`; esta biblioteca interpreta JSONC,
-valida dados e conecta estado e eventos. Quando um controle faltar, implemente-o
-em `megalodonte-components` antes de expô-lo no JSONC.
-Para um cliente contendo apenas scripts por view, use a biblioteca vizinha
-`megalodonte-script-app`, que automatiza o registro, validação, navegação e bootstrap.
-O exemplo de registro abaixo é a API de baixo nível para integrações personalizadas.
+A Java 25/JavaFX 25 library that builds native Megalodonte screens from `.view.jsonc` files. A view declares local state, a component tree, bindings, presentation, validation and events. Applications register Java domain actions; JSONC never executes arbitrary code. Every visual control is implemented in `megalodonte-components`. Add and test a missing control there before exposing it through this renderer.
 
-## Usar em um projeto
+The [codebase guide](docs/CODEBASE.md) maps every production class to its responsibility.
 
-Este checkout inclui as bibliotecas `core`, `base` e `components` do ecossistema via
-Gradle composite builds quando elas existem ao lado. Não é preciso republicar essas
-bibliotecas para desenvolver aqui. Fora desse workspace, use os artefatos Maven.
+For applications organized as one script per view, use the sibling `megalodonte-script-app` launcher. This library also exposes a low-level API for custom hosts.
 
-```powershell
-$env:JAVA_HOME = 'C:/Program Files/Java/jdk-25.0.4.1'
-./gradlew.bat test
-./gradlew.bat publishToMavenLocal
-```
+## Install and open a view
 
-No projeto consumidor:
+The local Gradle build can include adjacent `core`, `base`, `components` and `theme` checkouts. Elsewhere, consume published Maven artifacts:
 
 ```kotlin
 repositories { mavenLocal(); mavenCentral() }
 dependencies { implementation("megalodonte:megalodonte-jsonc-ui:0.1.0") }
 ```
 
-O consumidor também configura o JavaFX e o tema Megalodonte, como nos aplicativos
-existentes. Para desenvolvimento entre pastas, `includeBuild("../megalodonte-jsonc-ui")`
-substitui a dependência Maven pelo código local.
-
 ```java
 ThemeManager.setTheme(new DefaultTheme());
-var actions = new Actions().register("salvar", screen -> {
-    var errors = screen.validate();
-    if (errors.isEmpty()) salvarCliente(screen.states().string("nome").get());
+var actions = new Actions().register("save", screen -> {
+    if (screen.validate().isEmpty()) saveCustomer(screen.states().string("name").get());
 });
-var screen = UiDefinition.fromResource(Main.class, "/views/cadastro.view.jsonc")
-    .open(actions);
+var screen = UiDefinition.fromResource(Main.class, "/views/customer.view.jsonc").open(actions);
 context.useView(screen);
-// Na destruição da tela: screen.close(), ou seu router chama onDestroy().
+// The router calls onDestroy(), or the host calls screen.close().
 ```
 
-Também é possível carregar um arquivo externo com `UiDefinition.fromPath(path)` ou
-uma string com `UiDefinition.parse(jsonc)`. Uma definição pode abrir várias sessões;
-cada sessão tem estados independentes. `render()` cria a árvore uma única vez.
+`UiDefinition.fromPath(path)` reads an external file and `UiDefinition.parse(jsonc)` reads a string. A definition may open multiple independent `UiSession` instances. `render()` builds each session's component tree once.
 
-## Contrato v1
+## Document contract v1
 
-O documento contém `version: 1`, `id`, `states` e `view`. `schema/view.schema.json`
-oferece sugestões e validação estrutural nos editores que suportam JSON Schema.
-O schema também acompanha o JAR em `megalodonte/jsonc/schema/view.schema.json`.
-O runtime também verifica referências, tipos, ações registradas e IDs únicos antes
-de criar nós. Propriedades desconhecidas são rejeitadas. Erros indicam o caminho
-do campo; erros de sintaxe preservam as linhas do arquivo original.
+Each document contains `version: 1`, `id`, `states` and `view`. [The JSON Schema](schema/view.schema.json) supports editor validation and is packaged in the JAR at `megalodonte/jsonc/schema/view.schema.json`. Runtime validation additionally checks state types, references, registered actions, unique component IDs and property names before constructing nodes. Errors identify the field path; syntax errors retain original source line numbers. JSONC accepts `//` and block comments, preserves escaped strings/URLs, and rejects duplicate keys and trailing commas.
 
-JSONC aceita comentários `//` e `/* ... */`, preserva URLs e strings escapadas e
-rejeita chaves duplicadas, vírgulas finais e execução de código. Não há `eval`.
+### State
 
-### Estados
-
-| type | initial | Tipo Java |
+| JSONC type | Initial value example | Java type |
 | --- | --- | --- |
-| string | `""` | String |
-| boolean | `false` | Boolean |
-| integer | `0` | Integer, 32 bits |
-| decimal | `"0.00"` | BigDecimal |
+| `string` | `""` | `String` |
+| `boolean` | `false` | `Boolean` |
+| `integer` | `0` | 32-bit `Integer` |
+| `decimal` | `"0.00"` | `BigDecimal` |
 
-Todos exigem `initial` não nulo. Decimais são strings para preservar precisão.
-`screen.states().state("total", BigDecimal.class)` retorna o `State<T>` existente.
-`get`, `set` e `string` são atalhos. Uma atribuição incompatível gera erro.
-Estados são locais à sessão e não são gravados no arquivo ou em disco. O aplicativo
-pode ligar serviços aos estados e implementar persistência explicitamente.
+All states require a non-null `initial`. Decimals use strings to preserve precision. `screen.states().state("total", BigDecimal.class)` returns an existing state; `get`, `set` and `string` are shortcuts. States belong to one session and are not persisted automatically. Applications connect services and storage explicitly.
 
-### Componentes, propriedades e bindings
+### Components and bindings
 
-| Componente | props |
+| Component | Data contract |
 | --- | --- |
-| Column, Row, Container | spacing, padding, width, height, maxWidth, fillWidth, fillHeight, alignment, bgColor |
-| Text | text, wrapWidth |
-| Input, PasswordInput | placeholder, height, width |
-| Button | text, height, fillWidth, defaultButton |
+| `Column`, `Row`, `Container` | `children`; spacing, padding, size, alignment, fill and background props |
+| `Scroll` | Exactly one child; size and fill props |
+| `Text`, `Button` | Text props and optional `bind.text`; text style; buttons can bind `onClick` |
+| `Input`, `PasswordInput`, `TextArea` | String `bind.value`; placeholder/size props; validation |
+| `ImagePreview` | Local image path from string `bind.source` |
+| `ImageSequence`, `SoundSequence`, `DataList` | JSON-array string `bind.items`, integer `bind.selected`, optional `onSelect` |
+| `DiffView` | Unified diff string from `bind.text` |
 
-Layouts recebem `children`. Medidas são inteiros em unidades do Megalodonte e usam
-o `ScaleProvider` existente. `alignment` aceita `start`, `center`, `end`.
-`style` aceita `fontSize`, `bold`, `textColor`, `fontFamily` em textos, botões e inputs.
+Layout measures are nonnegative integers resolved through Megalodonte scaling. `alignment` accepts `start`, `center` or `end`. Text style supports `fontSize`, `bold`, `textColor` and `fontFamily`; buttons also accept `bgColor`. `bind.visible` and `bind.disabled` require boolean states. `id` identifies a rendered component for `screen.component(id)`.
 
-- `bind.value`: estado string, duas vias, em Input/PasswordInput.
-- `bind.text`: qualquer estado escalar para Text/Button, uma via.
-- `bind.visible`: estado booleano; também controla a participação no layout.
-- `bind.disabled`: estado booleano para desabilitar o componente.
-- `id`: identifica um componente para `screen.component(id)` após renderizar.
+`Button` uses JavaFX `onAction` for mouse and keyboard operation. `Input` and `PasswordInput` accept `events.onEnter`; `TextArea` does not, because Enter inserts a line. Action names are registered through `Actions`, copied when a session opens, and invoked with that session.
 
-PasswordInput usa um PasswordField nativo com o tema Megalodonte e sem alternância
-de visibilidade. Button usa `onAction` do JavaFX para funcionar com mouse e teclado.
-`events.onClick` em Button e `events.onEnter` nos inputs referenciam ações registradas.
-Ações recebem a sessão da tela, e o registro é copiado ao abrir a sessão.
+### Format and validation
 
-### Formatação e validação
+See [the formatting example](examples/formatting.view.jsonc). `mask` uses `#` for digits and punctuation, with `store: "digits"`; state values must use that digit-only representation. `uppercase` and `lowercase` normalize input or transform text display. `currency` and `number` format numeric states for display without changing their numeric type. Password inputs and text areas do not support formatters. Mask reformatting currently moves the caret to the end.
 
-Veja `examples/formatting.view.jsonc`.
+Input validation supports `required`, `email`, `minLength`, `maxLength` and `label`. `screen.validate()` returns the first error per field; it neither submits a form nor changes UI automatically. Email validation checks basic shape, not address existence.
 
-- `mask`: `pattern` com `#` para dígitos e pontuação, `store: "digits"`. A edição
-  armazena apenas dígitos e limita a quantidade à máscara; valores programáticos
-  devem usar essa representação. Máscaras são suportadas em Input e Text.
-- `uppercase`/`lowercase`: Input normaliza a edição; Text transforma a apresentação.
-- `currency`: em Text ligado a integer/decimal, `currency: "BRL"`, `locale: "pt-BR"`.
-- `number`: em Text ligado a integer/decimal, `locale` opcional.
+### Desktop data controls
 
-O estado numérico permanece numérico. Formatação de moeda é de exibição nesta versão.
-PasswordInput não recebe formatadores. Máscaras que inserem pontuação reposicionam
-o cursor ao fim quando reformulam o texto; edição avançada do cursor pode ser evoluída.
+`ImageSequence` accepts objects `{label, source, duration}`. Duration must be finite and positive; selection is a zero-based index, with `-1` meaning none. Thumbnail intervals are cumulative. `SoundSequence` accepts `{label, start, duration, volume}` and lays overlapping clips in separate lanes. Both use Megalodonte horizontal scrolling and update selection before invoking `onSelect`.
 
-Nos inputs, `validation` aceita `required`, `email`, `minLength`, `maxLength`, `label`.
-`screen.validate()` retorna o primeiro erro por campo, sem enviar o formulário ou
-alterar a UI automaticamente. As ações escolhem como mostrar esses erros.
-Email usa uma verificação básica de formato; não verifica existência do endereço.
+`DataList` accepts `{label, detail?, badge?}` rows in a JSON string. It virtualizes rows, exposes accessible text and clears an out-of-range selection after data changes. Programmatic item or selection updates do not invoke business actions. `DiffView` virtualizes unified-diff lines, colors headers/hunks/additions/removals, supports line selection, Ctrl+C and a copy context menu. Its content is literal text, never HTML. Both native controls live in `megalodonte-components`; this library only validates data and binds them.
 
-### Ciclo de vida
+Arrays are validated before visual replacement. Producers should bound large lists and diffs to avoid unbounded memory retention. These desktop controls currently use their own palette and do not dynamically restyle after a theme change.
 
-Crie a sessão antes de montar a tela. Renderização, alterações de estado após montar
-e fechamento da tela montada devem ocorrer na thread JavaFX. Use `Platform.runLater`
-para aplicar resultados de serviços assíncronos.
-`close()`/`onDestroy()` liberam bindings, assinaturas de tema e handlers, apagam o texto dos campos e
-descartam o registro dos estados. Fechamento é idempotente; a sessão não é reutilizável.
-Referências a estados que o aplicativo guardou também devem ser liberadas.
+## Lifecycle and limits
 
-## Escopo inicial
+Create the session before showing a screen. Rendering, post-render state mutations and closing a rendered screen belong on the JavaFX thread; use `Platform.runLater` to deliver asynchronous results. `close()`/`onDestroy()` detach bindings and handlers, clear fields and dispose local state. Closing is idempotent, and a closed session cannot be reused.
 
-Esta versão cobre telas estáticas com estados reativos, validação e formatação.
-Listas dinâmicas, computed states declarativos, estados globais, templates, navegação
-declarativa, novos componentes e hot reload são extensões futuras. O aplicativo cliente
-vizinho é o exemplo executável e o ponto de partida para evoluir o contrato.
+The contract supports reactive local state, validation, formatting and data-driven list/media controls. It does not yet provide declarative computed states, global stores, templates or hot reload. Domain persistence and navigation policy belong to the host application.
 
-## Controles de roteiro e sequência de imagens
-
-`TextArea` oferece texto multilinha com `bind.value` string em duas vias e
-`props.placeholder`, `width`, `height`. Aceita as validações de entrada; não aceita
-formatadores nem `onEnter` (Enter insere uma linha).
-
-`ImagePreview` recebe `bind.source` string com caminho de imagem local e
-`props.width`/`height`. Preserva proporção e apresenta um placeholder se não puder
-ler a imagem. Não busca URLs remotas.
-
-`ImageSequence` recebe `bind.items` string contendo um array JSON de objetos
-`{label, source, duration}` e `bind.selected` integer com índice da seleção
-(`-1` representa nenhuma seleção). `duration` deve ser finita e positiva.
-Miniaturas são ordenadas pelo array; `events.onSelect` é opcional e dispara após
-seleção pelo mouse ou Enter/Espaço. Os intervalos são cumulativos. Width/height
-controlam o viewport, que permite rolagem horizontal. O aplicativo consumidor
-valida os dados antes de publicá-los no estado. Todos os listeners e assinaturas
-seguem o ciclo de vida da sessão. Veja `megalodonte-video-editor` para um consumidor.
-
-
-`Scroll` aceita exatamente um filho em `children` e props `width`, `height`,
-`fillWidth`, `fillHeight`. Usa `megalodonte.components.v2.Scroll` para rolagem
-vertical com viewport recortado e barra própria. `ImageSequence` agora usa
-`megalodonte.components.v2.HorizontalScroll`, com roda do mouse, gesto horizontal,
-barra arrastável e navegação pelas setas/Home/End, sem criar ScrollPane.
-`ImagePreview` centraliza um quadro horizontal 16:9 dentro da área disponível;
-imagens são encaixadas preservando proporção, com barras pretas quando necessário.
-
-### SoundSequence
-
-Faixa declarativa de efeitos sonoros com HorizontalScroll Megalodonte. Usa `bind.items` (JSON string com objetos `label`, `start`, `duration`, `volume`) e `bind.selected` (integer), evento `onSelect` e propriedades `height`/`width`. Mostra régua em segundos, entradas absolutas e sobreposições em linhas separadas. Seleção por clique, Enter ou Espaço.
-
-### DataList e DiffView
-
-Componentes reutilizáveis em `megalodonte.jsonc.components`, com controles de
-plataforma encapsulados no framework e sem WebView. Ambos usam virtualização:
-a quantidade de nós gráficos acompanha o viewport, não a quantidade de linhas.
-Aceitam `props.width`, `height`, `fillWidth`, `fillHeight`.
-
-- `DataList`: `bind.items` string JSON com array de `{label, detail?, badge?}`;
-  `label` é obrigatório, os campos são strings. `bind.selected` integer é o índice
-  (`-1` sem seleção). `events.onSelect` opcional executa após a seleção do usuário,
-  com o estado atualizado. Trocas programáticas dos dados/seleção não disparam
-  ações; uma seleção fora dos limites após trocar os itens é redefinida para -1.
-  Mouse e teclas de navegação selecionam; os itens têm texto acessível.
-- `DiffView`: `bind.text` string com diff unificado. Cabeçalhos, trechos, adições e
-  remoções recebem cores distintas. Permite rolagem, seleção de linhas (inclusive
-  múltiplas), Ctrl+C e menu contextual para copiar linhas ou o diff completo.
-  Texto é literal; nenhum conteúdo é interpretado como HTML ou executado.
-
-```json
-{"type":"DataList","props":{"width":300,"fillHeight":true},
- "bind":{"items":"files","selected":"fileIndex"},"events":{"onSelect":"selectFile"}}
+```sh
+./gradlew test publishToMavenLocal
 ```
-```json
-{"type":"DiffView","props":{"fillWidth":true,"fillHeight":true},"bind":{"text":"diff"}}
-```
-
-Arrays são validados antes da substituição visual. Dados/handlers/bindings são
-liberados ao fechar a sessão. Os componentes de desktop têm paleta clara própria;
-esta versão não acompanha mudanças de tema. DiffView seleciona linhas completas,
-não intervalos de caracteres. O produtor deve limitar o tamanho do diff recebido
-para evitar manter textos ilimitados na memória.
