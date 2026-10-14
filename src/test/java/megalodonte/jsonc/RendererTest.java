@@ -128,6 +128,24 @@ class RendererTest {
             }
         });
     }
+
+    @Test void nativeDatePickerSynchronizesIsoDate() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var definition = UiDefinition.parse(DefinitionTest.document("""
+                    {"date":{"type":"string","initial":"2026-10-14"}}
+                    """, """
+                    {"type":"DatePicker","id":"datePicker","bind":{"value":"date"}}
+                    """));
+            try (var session = definition.open(new Actions())) {
+                session.render();
+                var picker = (javafx.scene.control.DatePicker) session.component("datePicker").getJavaFxNode();
+                assertEquals(java.time.LocalDate.of(2026, 10, 14), picker.getValue());
+                picker.setValue(java.time.LocalDate.of(2026, 10, 15));
+                assertEquals("2026-10-15", session.states().string("date").get());
+            }
+        });
+    }
     @Test void imageCanBindSourceAndVisibility() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());

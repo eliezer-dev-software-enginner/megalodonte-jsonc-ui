@@ -48,7 +48,7 @@ public final class UiDefinition {
         boolean layout = Set.of("Column", "Row", "Container").contains(type);
         boolean scroll = type.equals("Scroll");
         boolean desktop = Set.of("DataList", "DiffView").contains(type);
-        boolean input = Set.of("Input", "PasswordInput", "TextArea").contains(type);
+        boolean input = Set.of("Input", "PasswordInput", "TextArea", "DatePicker").contains(type);
         if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select", "Table").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
@@ -57,7 +57,7 @@ public final class UiDefinition {
                 : type.equals("Container") ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor", "bgImage"}
                 : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
                 : type.equals("TextArea") ? new String[]{"placeholder", "height", "width", "readOnly"}
-                : type.equals("Select") ? new String[]{"height", "width"}
+                : Set.of("Select", "DatePicker").contains(type) ? new String[]{"height", "width"}
                 : input ? new String[]{"placeholder", "height", "width"}
                 : type.equals("Image") ? new String[]{"source", "height", "width"}
                 : Set.of("ImagePreview", "ImageSequence", "SoundSequence").contains(type) ? new String[]{"height", "width"}
@@ -120,6 +120,11 @@ public final class UiDefinition {
         }
         if (type.equals("Select") && (!bind.has("items") || !bind.has("value")))
             throw new UiException(path + ".bind", "Select requires items and value");
+        if (type.equals("DatePicker")) {
+            var iso = states.string(bind.get("value").getAsString()).get();
+            if (iso != null && !iso.isBlank()) try { java.time.LocalDate.parse(iso); }
+            catch (java.time.format.DateTimeParseException error) { throw new UiException(path + ".bind.value", "DatePicker requires an ISO date"); }
+        }
         if (type.equals("ImagePreview") && !bind.has("source")) throw new UiException(path + ".bind", "ImagePreview requires source");
         if (input && !bind.has("value")) throw new UiException(path + ".bind.value", "Input requires a state binding");
         if (bind.has("text") && props.has("text")) throw new UiException(path, "Declare either props.text or bind.text");
@@ -128,10 +133,10 @@ public final class UiDefinition {
         if (node.has("format") && format.isEmpty()) throw new UiException(path + ".format", "Expected a format kind");
         if (!format.isEmpty() && !input && !type.equals("Text")) throw new UiException(path + ".format", "Formatting requires Input or Text");
         Class<?> formattedType = input ? String.class : bind.has("text") ? states.type(bind.get("text").getAsString()) : String.class;
-        if (type.equals("TextArea") && !format.isEmpty()) throw new UiException(path + ".format", "TextArea does not support formatting");
+        if (Set.of("TextArea", "DatePicker").contains(type) && !format.isEmpty()) throw new UiException(path + ".format", "This input does not support formatting");
         Formats.validate(format, path + ".format", type, formattedType);
         JsonObject events = Values.optional(node, "events", path);
-        Values.keys(events, path + ".events", type.equals("Button") ? new String[]{"onClick"} : type.equals("Table") ? new String[]{"onSelect", "onDoubleClick"} : Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) ? new String[]{"onSelect"} : input && !type.equals("TextArea") ? new String[]{"onEnter"} : new String[]{});
+        Values.keys(events, path + ".events", type.equals("Button") ? new String[]{"onClick"} : type.equals("Table") ? new String[]{"onSelect", "onDoubleClick"} : Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) ? new String[]{"onSelect"} : input && !Set.of("TextArea", "DatePicker").contains(type) ? new String[]{"onEnter"} : new String[]{});
         events.asMap().forEach((key, value) -> {
             String name = Values.name(value, path + ".events." + key);
             if (!actions.contains(name)) throw new UiException(path + ".events." + key, "Unregistered action: " + name);

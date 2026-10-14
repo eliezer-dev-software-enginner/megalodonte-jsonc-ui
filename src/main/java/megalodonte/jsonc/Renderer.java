@@ -100,6 +100,29 @@ final class Renderer {
                 session.cleanup(() -> { control.valueProperty().removeListener(listener); control.getItems().clear(); });
                 yield select;
             }
+            case "DatePicker" -> {
+                var dateProps = new DatePickerProps();
+                if (props.has("width")) dateProps.width(props.get("width").getAsInt());
+                if (props.has("height")) dateProps.height(props.get("height").getAsInt());
+                var picker = new megalodonte.components.DatePicker(dateProps);
+                var control = (javafx.scene.control.DatePicker) picker.getJavaFxNode();
+                var selected = session.states().string(bind.get("value").getAsString());
+                session.observe(selected, iso -> {
+                    try {
+                        var value = iso == null || iso.isBlank() ? null : java.time.LocalDate.parse(iso);
+                        if (!java.util.Objects.equals(control.getValue(), value)) control.setValue(value);
+                    } catch (java.time.format.DateTimeParseException error) {
+                        throw new UiException("view.bind.value", "DatePicker requires an ISO date");
+                    }
+                });
+                javafx.beans.value.ChangeListener<java.time.LocalDate> listener = (ignored, old, value) -> {
+                    var iso = value == null ? "" : value.toString();
+                    if (!java.util.Objects.equals(selected.get(), iso)) selected.set(iso);
+                };
+                control.valueProperty().addListener(listener);
+                session.cleanup(() -> control.valueProperty().removeListener(listener));
+                yield picker;
+            }
             case "DataList", "DiffView" -> DesktopNodes.render(type, props, bind, events, session);
             case "Table" -> TableNodes.render(props, bind, events, session);
             case "TextArea", "ImagePreview", "ImageSequence", "SoundSequence" -> MediaNodes.render(type, props, bind, events, session);

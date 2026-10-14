@@ -107,5 +107,13 @@ class DefinitionTest {
         String multi = table.replace("\"columns\":", "\"multipleSelection\":true,\"columns\":");
         assertThrows(UiException.class, () -> open(states, multi));
     }
+    @Test void datePickerRequiresIsoStringState() {
+        try (var session = open("{\"date\":{\"type\":\"string\",\"initial\":\"2026-10-14\"}}",
+                "{\"type\":\"DatePicker\",\"bind\":{\"value\":\"date\"}}")) {
+            assertEquals("2026-10-14", session.states().string("date").get());
+        }
+        assertThrows(UiException.class, () -> open("{\"date\":{\"type\":\"string\",\"initial\":\"14/10/2026\"}}",
+                "{\"type\":\"DatePicker\",\"bind\":{\"value\":\"date\"}}"));
+    }
 
 }
