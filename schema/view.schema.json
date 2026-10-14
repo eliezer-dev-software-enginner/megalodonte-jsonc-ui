@@ -81,7 +81,7 @@
     "tableProps": {"type":"object","additionalProperties":false,"required":["columns"],"properties":{"columns":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["title","field"],"properties":{"title":{"type":"string"},"field":{"$ref":"#/$defs/identifier"}}}},"height":{"$ref":"#/$defs/size"},"pageSize":{"type":"integer","minimum":1},"horizontalScroll":{"type":"boolean"},"multipleSelection":{"type":"boolean"}}},
     "buttonProps": {
       "type": "object", "additionalProperties": false,
-      "properties": { "text": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "fillWidth": { "type": "boolean" }, "defaultButton": { "type": "boolean" } }
+      "properties": { "text": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "fillWidth": { "type": "boolean" }, "defaultButton": { "type": "boolean" }, "iconSource": { "type": "string" }, "iconSize": { "$ref": "#/$defs/size" } }
     },
     "bind": {
       "type": "object", "additionalProperties": false,

@@ -63,6 +63,12 @@ final class Renderer {
                 var button = new megalodonte.components.Button(Values.string(props, "text", ""), null);
                 themed(button, bp);
                 var node = (javafx.scene.control.Button) button.getJavaFxNode();
+                if (props.has("iconSource")) {
+                    String source = props.get("iconSource").getAsString();
+                    if (Renderer.class.getResource(source) == null)
+                        throw new UiException("view.props.iconSource", "Button icon resource not found: " + source);
+                    button.icon(new megalodonte.components.Icon(source, props.has("iconSize") ? props.get("iconSize").getAsInt() : 20));
+                }
                 if (bind.has("text")) observeText(bind.get("text").getAsString(), format, node::setText);
                 node.setDefaultButton(flag(props, "defaultButton"));
                 if (events.has("onClick")) node.setOnAction(event -> session.invoke(events.get("onClick").getAsString()));

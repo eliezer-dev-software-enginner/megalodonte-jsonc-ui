@@ -62,7 +62,7 @@ public final class UiDefinition {
                 : input ? new String[]{"placeholder", "height", "width"}
                 : type.equals("Image") ? new String[]{"source", "height", "width"}
                 : Set.of("ImagePreview", "ImageSequence", "SoundSequence").contains(type) ? new String[]{"height", "width"}
-                : type.equals("Button") ? new String[]{"text", "height", "fillWidth", "defaultButton"} : new String[]{"text", "wrapWidth"};
+                : type.equals("Button") ? new String[]{"text", "height", "fillWidth", "defaultButton", "iconSource", "iconSize"} : new String[]{"text", "wrapWidth"};
         Values.keys(props, path + ".props", allowed);
         props.asMap().forEach((key, value) -> {
             String p = path + ".props." + key;
@@ -76,7 +76,7 @@ public final class UiDefinition {
                 }
             }
             else if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly", "horizontalScroll", "multipleSelection").contains(key)) Values.bool(value, p);
-            else if (Set.of("text", "placeholder", "alignment", "bgColor", "source", "bgImage", "name").contains(key)) Values.string(value, p);
+            else if (Set.of("text", "placeholder", "alignment", "bgColor", "source", "iconSource", "bgImage", "name").contains(key)) Values.string(value, p);
             else if (Values.integer(value, p) < 0) throw new UiException(p, "Must be nonnegative");
         });
         if (props.has("alignment") && !Set.of("start", "center", "end").contains(props.get("alignment").getAsString()))
@@ -84,6 +84,8 @@ public final class UiDefinition {
         if (type.equals("Slot") && !props.has("name")) throw new UiException(path + ".props.name", "Slot requires a name");
         if (type.equals("Image") && !props.has("source") && !Values.optional(node, "bind", path).has("source"))
             throw new UiException(path + ".props.source", "Image source or binding is required");
+        if (type.equals("Button") && props.has("iconSize") && !props.has("iconSource"))
+            throw new UiException(path + ".props.iconSize", "Button iconSize requires iconSource");
         JsonObject style = Values.optional(node, "style", path);
         if ((layout || scroll || desktop || Set.of("Image", "Table", "Slot").contains(type)) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
         Values.keys(style, path + ".style", type.equals("Button")
