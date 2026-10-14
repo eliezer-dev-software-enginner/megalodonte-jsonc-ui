@@ -227,6 +227,7 @@ final class Renderer {
         var input = new NativeTextInput(password, null);
         var field = input.control();
         themed(input, props);
+        if (password) input.enableVisibilityToggle();
         field.setPromptText(placeholder);
         final boolean[] syncing = {false};
         if (!format.isEmpty()) field.setTextFormatter(new TextFormatter<String>(change -> {
