@@ -106,6 +106,28 @@ class RendererTest {
             }
         });
     }
+
+    @Test void nativeTableUpdatesRowsAndSelection() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var definition = UiDefinition.parse(DefinitionTest.document("""
+                    {"rows":{"type":"string","initial":"[{\\"id\\":\\"1\\",\\"name\\":\\"Ada\\"}]"},
+                     "selected":{"type":"string","initial":""},"checked":{"type":"string","initial":"[]"}}
+                    """, """
+                    {"type":"Table","id":"table","props":{"columns":[{"title":"Name","field":"name"}],"multipleSelection":true},
+                     "bind":{"items":"rows","selected":"selected","selectedItems":"checked"}}
+                    """));
+            try (var session = definition.open(new Actions())) {
+                session.render();
+                var table = (TableView<?>) session.component("table").getJavaFxNode();
+                assertEquals(1, table.getItems().size());
+                table.getSelectionModel().selectFirst();
+                assertTrue(session.states().string("selected").get().contains("Ada"));
+                session.states().string("rows").set("[]");
+                assertTrue(table.getItems().isEmpty());
+            }
+        });
+    }
     @Test void imageCanBindSourceAndVisibility() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());
