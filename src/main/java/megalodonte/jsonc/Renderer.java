@@ -76,16 +76,32 @@ final class Renderer {
                 var select = themed(new megalodonte.components.Select<String>(), selectProps);
                 @SuppressWarnings("unchecked") var control = (ComboBox<String>) select.getJavaFxNode();
                 var selected = session.states().string(bind.get("value").getAsString());
+                var labels = new java.util.HashMap<String, String>();
+                control.setConverter(new javafx.util.StringConverter<>() {
+                    @Override public String toString(String value) { return value == null ? "" : labels.getOrDefault(value, value); }
+                    @Override public String fromString(String label) {
+                        return labels.entrySet().stream().filter(entry -> entry.getValue().equals(label))
+                                .map(java.util.Map.Entry::getKey).findFirst().orElse(label);
+                    }
+                });
                 session.observe(session.states().string(bind.get("items").getAsString()), json -> {
                     var items = new java.util.ArrayList<String>();
+                    labels.clear();
                     try {
                         for (JsonElement item : JsonParser.parseString(json).getAsJsonArray()) {
-                            if (!item.isJsonPrimitive() || !item.getAsJsonPrimitive().isString())
-                                throw new IllegalArgumentException("Select items must be strings");
-                            items.add(item.getAsString());
+                            String value, label;
+                            if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
+                                value = label = item.getAsString();
+                            } else {
+                                var option = item.getAsJsonObject();
+                                value = option.get("value").getAsString();
+                                label = option.get("label").getAsString();
+                            }
+                            if (labels.putIfAbsent(value, label) != null) throw new IllegalArgumentException("Duplicate Select value");
+                            items.add(value);
                         }
                     } catch (RuntimeException error) {
-                        throw new UiException("view.bind.items", "Select items must be a JSON string array");
+                        throw new UiException("view.bind.items", "Select items must be unique strings or label/value objects");
                     }
                     control.getItems().setAll(items);
                     if (!java.util.Objects.equals(control.getValue(), selected.get())) control.setValue(selected.get());

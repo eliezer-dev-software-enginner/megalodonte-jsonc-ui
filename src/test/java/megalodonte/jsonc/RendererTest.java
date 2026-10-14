@@ -180,6 +180,11 @@ class RendererTest {
                 assertEquals("TCP", session.states().string("selected").get());
                 session.states().string("choices").set("[\"USB\",\"TCP\"]");
                 assertEquals(java.util.List.of("USB", "TCP"), control.getItems());
+                session.states().string("choices").set("[{\"label\":\"All clients\",\"value\":\"0\"},{\"label\":\"Acme\",\"value\":\"42\"}]");
+                assertEquals(java.util.List.of("0", "42"), control.getItems());
+                assertEquals("Acme", control.getConverter().toString("42"));
+                control.setValue("42");
+                assertEquals("42", session.states().string("selected").get());
             }
         });
     }

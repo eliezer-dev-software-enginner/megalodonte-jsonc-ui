@@ -57,7 +57,7 @@ All states require a non-null `initial`. Decimals use strings to preserve precis
 | `Text`, `Button` | Text props and optional `bind.text`; text style; buttons can bind `onClick` |
 | `Input`, `PasswordInput`, `TextArea` | String `bind.value`; placeholder/size props; validation. `TextArea` also accepts `props.readOnly` for display-only content. |
 | `Image` | Static classpath `props.source` or live string `bind.source`, with optional width and height; rendered by `megalodonte-components`. |
-| `Select` | String `bind.items` containing a JSON array of option labels and string `bind.value` for two-way selection; uses the themed Megalodonte control. |
+| `Select` | String `bind.items` containing a JSON array of strings or `{label, value}` objects and string `bind.value` for two-way selection; uses the themed Megalodonte control. |
 | `DatePicker` | Native themed Megalodonte date picker with an ISO `yyyy-MM-dd` string in `bind.value`; an empty string means no date. |
 | `ImagePreview` | Local image path from string `bind.source` |
 | `ImageSequence`, `SoundSequence`, `DataList` | JSON-array string `bind.items`, integer `bind.selected`, optional `onSelect` |
