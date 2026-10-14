@@ -35,6 +35,15 @@ final class TableNodes {
         if (props.has("pageSize")) table.paginate(props.get("pageSize").getAsInt());
         session.observe(session.states().string(bind.get("items").getAsString()), json -> rows.set(parseRows(json)));
         var selected = session.states().string(bind.get("selected").getAsString());
+        if (props.has("multipleSelection") && props.get("multipleSelection").getAsBoolean()) {
+            var selectedItems = session.states().string(bind.get("selectedItems").getAsString());
+            table.enableMultipleSelection(checked -> {
+                var values = new com.google.gson.JsonArray();
+                checked.forEach(values::add);
+                selectedItems.set(values.toString());
+                if (events.has("onSelect")) session.invoke(events.get("onSelect").getAsString());
+            });
+        }
         table.onItemSelectChange(row -> {
             selected.set(row == null ? "" : row.toString());
             if (events.has("onSelect")) session.invoke(events.get("onSelect").getAsString());

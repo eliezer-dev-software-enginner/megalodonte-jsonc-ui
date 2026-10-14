@@ -78,7 +78,7 @@
     "mediaProps": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}}},
     "imageProps": {"type": "object", "additionalProperties": false, "properties": {"source": {"type": "string"}, "width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}}},
     "desktopProps": {"type":"object","additionalProperties":false,"properties":{"width":{"$ref":"#/$defs/size"},"height":{"$ref":"#/$defs/size"},"fillWidth":{"type":"boolean"},"fillHeight":{"type":"boolean"}}},
-    "tableProps": {"type":"object","additionalProperties":false,"required":["columns"],"properties":{"columns":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["title","field"],"properties":{"title":{"type":"string"},"field":{"$ref":"#/$defs/identifier"}}}},"height":{"$ref":"#/$defs/size"},"pageSize":{"type":"integer","minimum":1},"horizontalScroll":{"type":"boolean"}}},
+    "tableProps": {"type":"object","additionalProperties":false,"required":["columns"],"properties":{"columns":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["title","field"],"properties":{"title":{"type":"string"},"field":{"$ref":"#/$defs/identifier"}}}},"height":{"$ref":"#/$defs/size"},"pageSize":{"type":"integer","minimum":1},"horizontalScroll":{"type":"boolean"},"multipleSelection":{"type":"boolean"}}},
     "buttonProps": {
       "type": "object", "additionalProperties": false,
       "properties": { "text": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "fillWidth": { "type": "boolean" }, "defaultButton": { "type": "boolean" } }
@@ -88,7 +88,7 @@
       "properties": {
         "value": { "$ref": "#/$defs/identifier" }, "text": { "$ref": "#/$defs/identifier" },
         "visible": { "$ref": "#/$defs/identifier" }, "disabled": { "$ref": "#/$defs/identifier" },
-        "source": { "$ref": "#/$defs/identifier" }, "items": { "$ref": "#/$defs/identifier" }, "selected": { "$ref": "#/$defs/identifier" }
+        "source": { "$ref": "#/$defs/identifier" }, "items": { "$ref": "#/$defs/identifier" }, "selected": { "$ref": "#/$defs/identifier" }, "selectedItems": { "$ref": "#/$defs/identifier" }
       }
     },
     "validation": {
@@ -163,6 +163,7 @@
         {"if": {"properties": {"type": {"not": {"enum": ["Image", "ImagePreview"]}}}}, "then": {"properties": {"bind": {"properties": {"source": false}}}}},
         {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList", "Select", "Table"]}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
         {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList", "Table"]}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}},
+        {"if": {"properties": {"type": {"not": {"const": "Table"}}}}, "then": {"properties": {"bind": {"properties": {"selectedItems": false}}}}},
         {"if": {"properties": {"type": {"not": {"const": "Button"}}}}, "then": {"properties": {"style": {"properties": {"bgColor": false}}}}},
         {"if": {"properties": {"type": {"const": "Scroll"}}}, "then": {"required": ["children"], "properties": {"children": {"minItems": 1, "maxItems": 1}, "props": {"type": "object", "additionalProperties": false, "properties": {"width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}, "fillWidth": {"type": "boolean"}, "fillHeight": {"type": "boolean"}}}}}}
       ]

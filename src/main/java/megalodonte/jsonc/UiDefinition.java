@@ -52,7 +52,7 @@ public final class UiDefinition {
         if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select", "Table").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
-        String[] allowed = type.equals("Table") ? new String[]{"columns", "height", "horizontalScroll", "pageSize"}
+        String[] allowed = type.equals("Table") ? new String[]{"columns", "height", "horizontalScroll", "pageSize", "multipleSelection"}
                 : (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"}
                 : type.equals("Container") ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor", "bgImage"}
                 : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
@@ -74,7 +74,7 @@ public final class UiDefinition {
                     Values.name(definition.get("field"), p + ".field");
                 }
             }
-            else if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly", "horizontalScroll").contains(key)) Values.bool(value, p);
+            else if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly", "horizontalScroll", "multipleSelection").contains(key)) Values.bool(value, p);
             else if (Set.of("text", "placeholder", "alignment", "bgColor", "source", "bgImage").contains(key)) Values.string(value, p);
             else if (Values.integer(value, p) < 0) throw new UiException(p, "Must be nonnegative");
         });
@@ -94,7 +94,7 @@ public final class UiDefinition {
             else Values.string(value, p);
         });
         JsonObject bind = Values.optional(node, "bind", path);
-        Values.keys(bind, path + ".bind", "value", "text", "visible", "disabled", "source", "items", "selected");
+        Values.keys(bind, path + ".bind", "value", "text", "visible", "disabled", "source", "items", "selected", "selectedItems");
         bind.asMap().forEach((key, value) -> {
             String p = path + ".bind." + key, name = Values.name(value, p);
             Class<?> stateType;
@@ -103,6 +103,7 @@ public final class UiDefinition {
                 throw new UiException(p, "source requires Image or ImagePreview and string state");
             if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Select", "Table").contains(type) || stateType != String.class)) throw new UiException(p, "items requires a list component and string JSON state");
             if (key.equals("selected") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Table").contains(type) || stateType != (type.equals("Table") ? String.class : Integer.class))) throw new UiException(p, "selected requires a matching state type");
+            if (key.equals("selectedItems") && (!type.equals("Table") || stateType != String.class)) throw new UiException(p, "selectedItems requires Table and string state");
             if (key.equals("text") && type.equals("DiffView") && stateType != String.class) throw new UiException(p, "DiffView requires string state");
             if (key.equals("value") && (!(input || type.equals("Select")) || stateType != String.class)) throw new UiException(p, "value requires an input and string state");
             if (key.equals("text") && !Set.of("Text", "Button", "DiffView").contains(type)) throw new UiException(p, "text requires Text or Button");
@@ -113,6 +114,7 @@ public final class UiDefinition {
         if (type.equals("DataList")) DesktopNodes.parseItems(states.string(bind.get("items").getAsString()).get());
         if (type.equals("Table")) {
             if (!props.has("columns") || !bind.has("items") || !bind.has("selected")) throw new UiException(path, "Table requires columns, items and selected");
+            if (props.has("multipleSelection") && props.get("multipleSelection").getAsBoolean() && !bind.has("selectedItems")) throw new UiException(path + ".bind.selectedItems", "Multiple selection requires selectedItems");
             TableNodes.parseRows(states.string(bind.get("items").getAsString()).get());
             if (props.has("pageSize") && props.get("pageSize").getAsInt() <= 0) throw new UiException(path + ".props.pageSize", "Must be positive");
         }

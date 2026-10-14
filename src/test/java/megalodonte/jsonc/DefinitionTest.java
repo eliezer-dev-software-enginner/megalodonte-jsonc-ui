@@ -104,6 +104,8 @@ class DefinitionTest {
         assertThrows(UiException.class, () -> TableNodes.parseRows("[1]"));
         assertThrows(UiException.class, () -> TableNodes.parseRows("{}"));
         assertEquals("Ada", TableNodes.parseRows("[{\"name\":\"Ada\"}]").getFirst().get("name").getAsString());
+        String multi = table.replace("\"columns\":", "\"multipleSelection\":true,\"columns\":");
+        assertThrows(UiException.class, () -> open(states, multi));
     }
 
 }
