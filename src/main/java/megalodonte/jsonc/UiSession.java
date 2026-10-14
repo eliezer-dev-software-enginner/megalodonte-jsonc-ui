@@ -24,6 +24,23 @@ public final class UiSession implements ScreenComponent, AutoCloseable {
     }
     private void ensureOpen() { if (closed) throw new IllegalStateException("View session is closed"); }
     public StateStore states() { ensureOpen(); return states; }
+    /** Connect an application state to a declared view state in both directions. */
+    public <T> UiSession bind(String name, State<T> model, Class<T> type) {
+        ensureOpen();
+        Objects.requireNonNull(model, "model");
+        State<T> view = states.state(name, type);
+        observe(model, view::set);
+        observe(view, model::set);
+        return this;
+    }
+    /** Display an application state without writing view edits back to it. */
+    public <T> UiSession display(String name, ReadableState<T> model, Class<T> type) {
+        ensureOpen();
+        Objects.requireNonNull(model, "model");
+        State<T> view = states.state(name, type);
+        observe(model, view::set);
+        return this;
+    }
     public String id() { return definition.document.get("id").getAsString(); }
     public Component component(String id) {
         ensureOpen();

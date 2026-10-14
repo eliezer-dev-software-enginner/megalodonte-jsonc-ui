@@ -27,6 +27,12 @@ context.useView(screen);
 
 `UiDefinition.fromPath(path)` reads an external file and `UiDefinition.parse(jsonc)` reads a string. A definition may open multiple independent `UiSession` instances. `render()` builds each session's component tree once.
 
+Application adapters can call `session.bind(name, modelState, String.class)` for
+two-way form state or `session.display(name, readableState, Boolean.class)` for
+one-way display state. The session detaches both bindings on `close()`. Keep
+database work and navigation in registered Java actions; describe controls,
+visibility and user-facing text in JSONC.
+
 ## Document contract v1
 
 Each document contains `version: 1`, `id`, `states` and `view`. [The JSON Schema](schema/view.schema.json) supports editor validation and is packaged in the JAR at `megalodonte/jsonc/schema/view.schema.json`. Runtime validation additionally checks state types, references, registered actions, unique component IDs and property names before constructing nodes. Errors identify the field path; syntax errors retain original source line numbers. JSONC accepts `//` and block comments, preserves escaped strings/URLs, and rejects duplicate keys and trailing commas.

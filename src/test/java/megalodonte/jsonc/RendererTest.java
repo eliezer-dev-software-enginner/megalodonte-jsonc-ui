@@ -13,6 +13,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RendererTest {
+    @Test void sessionBindingsSynchronizeAndDetach() {
+        var model = megalodonte.base.state.State.of("first");
+        var definition = UiDefinition.parse(DefinitionTest.document("""
+                {"value":{"type":"string","initial":""}}
+                """, """
+                {"type":"Text","bind":{"text":"value"}}
+                """));
+        var session = definition.open(new Actions()).bind("value", model, String.class);
+        assertEquals("first", session.states().string("value").get());
+        session.states().string("value").set("second");
+        assertEquals("second", model.get());
+        model.set("third");
+        assertEquals("third", session.states().string("value").get());
+        var view = session.states().string("value");
+        session.close();
+        model.set("after close");
+        assertEquals("third", view.get());
+    }
     @BeforeAll static void startup() throws Exception {
         var started = new CountDownLatch(1);
         Platform.startup(() -> { Platform.setImplicitExit(false); started.countDown(); });
