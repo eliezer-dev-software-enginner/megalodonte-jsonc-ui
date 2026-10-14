@@ -146,6 +146,20 @@ class RendererTest {
             }
         });
     }
+
+    @Test void slotMountsNativeChildBeforeRendering() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var child = new megalodonte.components.Text("child");
+            var definition = UiDefinition.parse(DefinitionTest.document("{}", """
+                    {"type":"Column","children":[{"type":"Slot","props":{"name":"content"}}]}
+                    """));
+            try (var session = definition.open(new Actions()).mount("content", child)) {
+                var root = (javafx.scene.layout.VBox) session.render().getJavaFxNode();
+                assertSame(child.getJavaFxNode(), root.getChildren().getFirst());
+            }
+        });
+    }
     @Test void imageCanBindSourceAndVisibility() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());

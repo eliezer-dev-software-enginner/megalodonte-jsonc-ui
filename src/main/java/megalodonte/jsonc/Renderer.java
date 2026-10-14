@@ -141,6 +141,7 @@ final class Renderer {
             }
             case "DataList", "DiffView" -> DesktopNodes.render(type, props, bind, events, session);
             case "Table" -> TableNodes.render(props, bind, events, session);
+            case "Slot" -> session.slot(props.get("name").getAsString());
             case "TextArea", "ImagePreview", "ImageSequence", "SoundSequence" -> MediaNodes.render(type, props, bind, events, session);
             case "Input", "PasswordInput" -> {
                 var themedInput = new ThemeProps.Input();
@@ -154,6 +155,14 @@ final class Renderer {
             default -> throw new UiException("view.type", "Unknown component: " + type);
         };
         Node node = component.getJavaFxNode();
+        if (type.equals("Slot") && flag(props, "fillWidth")) {
+            if (node instanceof Region region) { region.setMinWidth(0); region.setMaxWidth(Double.MAX_VALUE); }
+            HBox.setHgrow(node, Priority.ALWAYS);
+        }
+        if (type.equals("Slot") && flag(props, "fillHeight")) {
+            if (node instanceof Region region) region.setMaxHeight(Double.MAX_VALUE);
+            VBox.setVgrow(node, Priority.ALWAYS);
+        }
         if (spec.has("id")) {
             String id = spec.get("id").getAsString();
             node.setId(id); session.remember(id, component);

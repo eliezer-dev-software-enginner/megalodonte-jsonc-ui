@@ -14,6 +14,7 @@ public final class UiSession implements ScreenComponent, AutoCloseable {
     private final StateStore states;
     private final List<Runnable> cleanup = new ArrayList<>();
     private final Map<String, Component> components = new LinkedHashMap<>();
+    private final Map<String, Component> slots = new LinkedHashMap<>();
     private Component root;
     private boolean closed;
     UiSession(UiDefinition definition, Actions actions) {
@@ -42,6 +43,19 @@ public final class UiSession implements ScreenComponent, AutoCloseable {
         return this;
     }
     public String id() { return definition.document.get("id").getAsString(); }
+    /** Mount a native child screen into a named JSONC slot before rendering. */
+    public UiSession mount(String name, Component child) {
+        ensureOpen();
+        if (root != null) throw new IllegalStateException("Mount slots before rendering");
+        if (slots.putIfAbsent(Objects.requireNonNull(name), Objects.requireNonNull(child)) != null)
+            throw new IllegalArgumentException("Slot already mounted: " + name);
+        return this;
+    }
+    Component slot(String name) {
+        Component child = slots.get(name);
+        if (child == null) throw new UiException("view.props.name", "Unbound slot: " + name);
+        return child;
+    }
     public Component component(String id) {
         ensureOpen();
         if (root == null) throw new IllegalStateException("Render the view before accessing components");
@@ -95,6 +109,6 @@ public final class UiSession implements ScreenComponent, AutoCloseable {
         if (root != null && !Platform.isFxApplicationThread()) throw new IllegalStateException("Close a rendered view on the JavaFX application thread");
         closed = true;
         for (int i = cleanup.size() - 1; i >= 0; i--) cleanup.get(i).run();
-        cleanup.clear(); components.clear(); states.close(); root = null;
+        cleanup.clear(); components.clear(); slots.clear(); states.close(); root = null;
     }
 }
