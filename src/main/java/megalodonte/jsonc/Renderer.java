@@ -101,6 +101,7 @@ final class Renderer {
                 yield select;
             }
             case "DataList", "DiffView" -> DesktopNodes.render(type, props, bind, events, session);
+            case "Table" -> TableNodes.render(props, bind, events, session);
             case "TextArea", "ImagePreview", "ImageSequence", "SoundSequence" -> MediaNodes.render(type, props, bind, events, session);
             case "Input", "PasswordInput" -> {
                 var themedInput = new ThemeProps.Input();

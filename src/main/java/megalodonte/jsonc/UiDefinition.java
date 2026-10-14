@@ -49,10 +49,11 @@ public final class UiDefinition {
         boolean scroll = type.equals("Scroll");
         boolean desktop = Set.of("DataList", "DiffView").contains(type);
         boolean input = Set.of("Input", "PasswordInput", "TextArea").contains(type);
-        if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
+        if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select", "Table").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
-        String[] allowed = (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"}
+        String[] allowed = type.equals("Table") ? new String[]{"columns", "height", "horizontalScroll", "pageSize"}
+                : (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"}
                 : type.equals("Container") ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor", "bgImage"}
                 : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
                 : type.equals("TextArea") ? new String[]{"placeholder", "height", "width", "readOnly"}
@@ -64,7 +65,16 @@ public final class UiDefinition {
         Values.keys(props, path + ".props", allowed);
         props.asMap().forEach((key, value) -> {
             String p = path + ".props." + key;
-            if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly").contains(key)) Values.bool(value, p);
+            if (key.equals("columns")) {
+                if (!value.isJsonArray() || value.getAsJsonArray().isEmpty()) throw new UiException(p, "Table requires columns");
+                for (var column : value.getAsJsonArray()) {
+                    var definition = Values.object(column, p);
+                    Values.keys(definition, p, "title", "field");
+                    Values.string(definition.get("title"), p + ".title");
+                    Values.name(definition.get("field"), p + ".field");
+                }
+            }
+            else if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly", "horizontalScroll").contains(key)) Values.bool(value, p);
             else if (Set.of("text", "placeholder", "alignment", "bgColor", "source", "bgImage").contains(key)) Values.string(value, p);
             else if (Values.integer(value, p) < 0) throw new UiException(p, "Must be nonnegative");
         });
@@ -73,7 +83,7 @@ public final class UiDefinition {
         if (type.equals("Image") && !props.has("source") && !Values.optional(node, "bind", path).has("source"))
             throw new UiException(path + ".props.source", "Image source or binding is required");
         JsonObject style = Values.optional(node, "style", path);
-        if ((layout || scroll || desktop || type.equals("Image")) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
+        if ((layout || scroll || desktop || type.equals("Image") || type.equals("Table")) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
         Values.keys(style, path + ".style", type.equals("Button")
                 ? new String[]{"fontSize", "bold", "textColor", "fontFamily", "bgColor"}
                 : new String[]{"fontSize", "bold", "textColor", "fontFamily"});
@@ -91,8 +101,8 @@ public final class UiDefinition {
             try { stateType = states.type(name); } catch (UiException e) { throw new UiException(p, "Unknown state: " + name); }
             if (key.equals("source") && (!Set.of("Image", "ImagePreview").contains(type) || stateType != String.class))
                 throw new UiException(p, "source requires Image or ImagePreview and string state");
-            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Select").contains(type) || stateType != String.class)) throw new UiException(p, "items requires a list component and string JSON state");
-            if (key.equals("selected") && (!Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) || stateType != Integer.class)) throw new UiException(p, "selected requires ImageSequence and integer state");
+            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Select", "Table").contains(type) || stateType != String.class)) throw new UiException(p, "items requires a list component and string JSON state");
+            if (key.equals("selected") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Table").contains(type) || stateType != (type.equals("Table") ? String.class : Integer.class))) throw new UiException(p, "selected requires a matching state type");
             if (key.equals("text") && type.equals("DiffView") && stateType != String.class) throw new UiException(p, "DiffView requires string state");
             if (key.equals("value") && (!(input || type.equals("Select")) || stateType != String.class)) throw new UiException(p, "value requires an input and string state");
             if (key.equals("text") && !Set.of("Text", "Button", "DiffView").contains(type)) throw new UiException(p, "text requires Text or Button");
@@ -101,6 +111,11 @@ public final class UiDefinition {
         if (Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) && (!bind.has("items") || !bind.has("selected"))) throw new UiException(path + ".bind", "ImageSequence requires items and selected");
         if (type.equals("DiffView") && !bind.has("text")) throw new UiException(path + ".bind", "DiffView requires text");
         if (type.equals("DataList")) DesktopNodes.parseItems(states.string(bind.get("items").getAsString()).get());
+        if (type.equals("Table")) {
+            if (!props.has("columns") || !bind.has("items") || !bind.has("selected")) throw new UiException(path, "Table requires columns, items and selected");
+            TableNodes.parseRows(states.string(bind.get("items").getAsString()).get());
+            if (props.has("pageSize") && props.get("pageSize").getAsInt() <= 0) throw new UiException(path + ".props.pageSize", "Must be positive");
+        }
         if (type.equals("Select") && (!bind.has("items") || !bind.has("value")))
             throw new UiException(path + ".bind", "Select requires items and value");
         if (type.equals("ImagePreview") && !bind.has("source")) throw new UiException(path + ".bind", "ImagePreview requires source");
@@ -114,7 +129,7 @@ public final class UiDefinition {
         if (type.equals("TextArea") && !format.isEmpty()) throw new UiException(path + ".format", "TextArea does not support formatting");
         Formats.validate(format, path + ".format", type, formattedType);
         JsonObject events = Values.optional(node, "events", path);
-        Values.keys(events, path + ".events", type.equals("Button") ? new String[]{"onClick"} : Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) ? new String[]{"onSelect"} : input && !type.equals("TextArea") ? new String[]{"onEnter"} : new String[]{});
+        Values.keys(events, path + ".events", type.equals("Button") ? new String[]{"onClick"} : type.equals("Table") ? new String[]{"onSelect", "onDoubleClick"} : Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) ? new String[]{"onSelect"} : input && !type.equals("TextArea") ? new String[]{"onEnter"} : new String[]{});
         events.asMap().forEach((key, value) -> {
             String name = Values.name(value, path + ".events." + key);
             if (!actions.contains(name)) throw new UiException(path + ".events." + key, "Unregistered action: " + name);

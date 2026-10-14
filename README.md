@@ -61,6 +61,7 @@ All states require a non-null `initial`. Decimals use strings to preserve precis
 | `ImagePreview` | Local image path from string `bind.source` |
 | `ImageSequence`, `SoundSequence`, `DataList` | JSON-array string `bind.items`, integer `bind.selected`, optional `onSelect` |
 | `DiffView` | Unified diff string from `bind.text` |
+| `Table` | Native Megalodonte `SimpleTable` with declarative `props.columns`, JSON object-array `bind.items`, string `bind.selected`, and optional selection/double-click actions. |
 
 Layout measures are nonnegative integers resolved through Megalodonte scaling. `alignment` accepts `start`, `center` or `end`. Text style supports `fontSize`, `bold`, `textColor` and `fontFamily`; buttons also accept `bgColor`. `bind.visible` and `bind.disabled` require boolean states. `id` identifies a rendered component for `screen.component(id)`.
 
@@ -77,6 +78,8 @@ Input validation supports `required`, `email`, `minLength`, `maxLength` and `lab
 `ImageSequence` accepts objects `{label, source, duration}`. Duration must be finite and positive; selection is a zero-based index, with `-1` meaning none. Thumbnail intervals are cumulative. `SoundSequence` accepts `{label, start, duration, volume}` and lays overlapping clips in separate lanes. Both use Megalodonte horizontal scrolling and update selection before invoking `onSelect`.
 
 `DataList` accepts `{label, detail?, badge?}` rows in a JSON string. It virtualizes rows, exposes accessible text and clears an out-of-range selection after data changes. Programmatic item or selection updates do not invoke business actions. `DiffView` virtualizes unified-diff lines, colors headers/hunks/additions/removals, supports line selection, Ctrl+C and a copy context menu. Its content is literal text, never HTML. Both native controls live in `megalodonte-components`; this library only validates data and binds them.
+
+`Table` accepts `props.columns` entries such as `{ "title": "Name", "field": "name" }` and a JSON array of objects in `bind.items`. It stores the selected row as JSON in the string state named by `bind.selected`; an empty string means no selection. `events.onSelect` and `events.onDoubleClick` run after that state changes. Optional `height`, `pageSize`, and `horizontalScroll` properties configure the native `SimpleTable`.
 
 Arrays are validated before visual replacement. Producers should bound large lists and diffs to avoid unbounded memory retention. These desktop controls currently use their own palette and do not dynamically restyle after a theme change.
 

@@ -97,4 +97,13 @@ class DefinitionTest {
         assertEquals("path/with spaces", DesktopNodes.parseItems("[{\"label\":\"path/with spaces\"}]").getFirst().label());
     }
 
+    @Test void tableRequiresColumnsAndJsonObjectRows() {
+        String states = "{\"rows\":{\"type\":\"string\",\"initial\":\"[]\"},\"selected\":{\"type\":\"string\",\"initial\":\"\"}}";
+        String table = "{\"type\":\"Table\",\"props\":{\"columns\":[{\"title\":\"Name\",\"field\":\"name\"}]},\"bind\":{\"items\":\"rows\",\"selected\":\"selected\"}}";
+        try (var session = open(states, table)) { assertEquals("[]", session.states().string("rows").get()); }
+        assertThrows(UiException.class, () -> TableNodes.parseRows("[1]"));
+        assertThrows(UiException.class, () -> TableNodes.parseRows("{}"));
+        assertEquals("Ada", TableNodes.parseRows("[{\"name\":\"Ada\"}]").getFirst().get("name").getAsString());
+    }
+
 }
