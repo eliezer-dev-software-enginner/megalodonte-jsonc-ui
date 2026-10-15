@@ -19,6 +19,11 @@ final class TableNodes {
         var tableProps = new SimpleTableProps();
         if (props.has("height")) tableProps.maxHeight(props.get("height").getAsInt());
         var table = new SimpleTable<JsonObject>(tableProps);
+        if (props.has("rowHeight")) {
+            int rowHeight = props.get("rowHeight").getAsInt();
+            if (rowHeight <= 0) throw new UiException("view.props.rowHeight", "Table rowHeight must be positive");
+            table.getTableView().setFixedCellSize(rowHeight);
+        }
         var rows = State.<List<JsonObject>>of(List.of());
         table.fromData(rows);
         var columns = table.header().columns();

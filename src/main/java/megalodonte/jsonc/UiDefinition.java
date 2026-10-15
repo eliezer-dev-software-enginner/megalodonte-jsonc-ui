@@ -54,7 +54,7 @@ public final class UiDefinition {
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
         String[] allowed = type.equals("Slot") ? new String[]{"name", "fillWidth", "fillHeight"}
-                : type.equals("Table") ? new String[]{"columns", "height", "horizontalScroll", "pageSize", "multipleSelection"}
+                : type.equals("Table") ? new String[]{"columns", "height", "rowHeight", "horizontalScroll", "pageSize", "multipleSelection"}
                 : chart ? new String[]{"title", "width", "height"}
                 : (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"}
                 : type.equals("Container") ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor", "bgImage"}
