@@ -25,10 +25,9 @@ final class TableNodes {
         for (JsonElement spec : props.getAsJsonArray("columns")) {
             var column = spec.getAsJsonObject();
             var field = column.get("field").getAsString();
-            columns.column(column.get("title").getAsString(), row -> {
-                var value = row.get(field);
-                return value == null || value.isJsonNull() ? "" : value.isJsonPrimitive() ? value.getAsString() : value.toString();
-            });
+            if (column.has("kind")) columns.imageColumn(column.get("title").getAsString(), row -> cellValue(row, field),
+                    column.has("size") ? column.get("size").getAsInt() : 40);
+            else columns.column(column.get("title").getAsString(), row -> cellValue(row, field));
         }
         columns.build();
         if (props.has("horizontalScroll") && props.get("horizontalScroll").getAsBoolean()) table.horizontalScroll();
@@ -53,6 +52,11 @@ final class TableNodes {
             session.invoke(events.get("onDoubleClick").getAsString());
         });
         return table;
+    }
+
+    private static String cellValue(JsonObject row, String field) {
+        var cell = row.get(field);
+        return cell == null || cell.isJsonNull() ? "" : cell.isJsonPrimitive() ? cell.getAsString() : cell.toString();
     }
 
     static List<JsonObject> parseRows(String json) {

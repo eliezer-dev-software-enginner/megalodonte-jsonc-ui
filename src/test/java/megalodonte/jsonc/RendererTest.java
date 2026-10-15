@@ -136,13 +136,14 @@ class RendererTest {
                     {"rows":{"type":"string","initial":"[{\\"id\\":\\"1\\",\\"name\\":\\"Ada\\"}]"},
                      "selected":{"type":"string","initial":""},"checked":{"type":"string","initial":"[]"}}
                     """, """
-                    {"type":"Table","id":"table","props":{"columns":[{"title":"Name","field":"name"}],"multipleSelection":true},
+                    {"type":"Table","id":"table","props":{"columns":[{"title":"Name","field":"name"},{"title":"Photo","field":"image","kind":"image","size":48}],"multipleSelection":true},
                      "bind":{"items":"rows","selected":"selected","selectedItems":"checked"}}
                     """));
             try (var session = definition.open(new Actions())) {
                 session.render();
                 var table = (TableView<?>) session.component("table").getJavaFxNode();
                 assertEquals(1, table.getItems().size());
+                assertFalse(table.getColumns().getLast().isSortable());
                 table.getSelectionModel().selectFirst();
                 assertTrue(session.states().string("selected").get().contains("Ada"));
                 session.states().string("rows").set("[]");

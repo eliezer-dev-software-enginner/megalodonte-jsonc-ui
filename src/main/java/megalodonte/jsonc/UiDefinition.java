@@ -72,9 +72,13 @@ public final class UiDefinition {
                 if (!value.isJsonArray() || value.getAsJsonArray().isEmpty()) throw new UiException(p, "Table requires columns");
                 for (var column : value.getAsJsonArray()) {
                     var definition = Values.object(column, p);
-                    Values.keys(definition, p, "title", "field");
+                    Values.keys(definition, p, "title", "field", "kind", "size");
                     Values.string(definition.get("title"), p + ".title");
                     Values.name(definition.get("field"), p + ".field");
+                    if (definition.has("kind") && !"image".equals(Values.string(definition.get("kind"), p + ".kind")))
+                        throw new UiException(p + ".kind", "Only image columns need a kind");
+                    if (definition.has("size") && (!definition.has("kind") || Values.integer(definition.get("size"), p + ".size") <= 0))
+                        throw new UiException(p + ".size", "Size requires an image column and must be positive");
                 }
             }
             else if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly", "horizontalScroll", "multipleSelection").contains(key)) Values.bool(value, p);

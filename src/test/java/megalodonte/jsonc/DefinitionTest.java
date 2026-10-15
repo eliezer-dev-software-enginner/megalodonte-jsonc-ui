@@ -107,6 +107,17 @@ class DefinitionTest {
         String multi = table.replace("\"columns\":", "\"multipleSelection\":true,\"columns\":");
         assertThrows(UiException.class, () -> open(states, multi));
     }
+    @Test void tableImageColumnsUseExplicitKindAndPositiveSize() {
+        String states = "{\"rows\":{\"type\":\"string\",\"initial\":\"[]\"},\"selected\":{\"type\":\"string\",\"initial\":\"\"}}";
+        String prefix = "{\"type\":\"Table\",\"props\":{\"columns\":[{\"title\":\"Photo\",\"field\":\"image\",";
+        String suffix = "}]},\"bind\":{\"items\":\"rows\",\"selected\":\"selected\"}}";
+        try (var session = open(states, prefix + "\"kind\":\"image\",\"size\":48" + suffix)) {
+            assertEquals("test", session.id());
+        }
+        assertThrows(UiException.class, () -> open(states, prefix + "\"kind\":\"video\"" + suffix));
+        assertThrows(UiException.class, () -> open(states, prefix + "\"kind\":\"image\",\"size\":0" + suffix));
+        assertThrows(UiException.class, () -> open(states, prefix + "\"size\":48" + suffix));
+    }
     @Test void chartDefinitionsRequireTypedJsonItems() {
         String states = "{\"bars\":{\"type\":\"string\",\"initial\":\"[{\\\"label\\\":\\\"Revenue\\\",\\\"value\\\":12,\\\"color\\\":\\\"#10b981\\\"}]\"}}";
         try (var session = open(states, "{\"type\":\"BarChart\",\"props\":{\"title\":\"Comparison\"},\"bind\":{\"items\":\"bars\"}}")) {
