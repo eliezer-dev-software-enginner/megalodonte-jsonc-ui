@@ -44,6 +44,28 @@ class RendererTest {
     static TextField field(UiSession session, String id) {
         return (TextField) ((StackPane) session.component(id).getJavaFxNode()).getChildren().getFirst();
     }
+    @Test void nativeChartsFollowJsoncItems() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var definition = UiDefinition.parse(DefinitionTest.document("""
+                    {"bars":{"type":"string","initial":"[]"},"slices":{"type":"string","initial":"[]"}}
+                    """, """
+                    {"type":"Column","children":[
+                      {"type":"BarChart","id":"bars","props":{"title":"Comparison"},"bind":{"items":"bars"}},
+                      {"type":"PieChart","id":"slices","props":{"title":"Channels"},"bind":{"items":"slices"}}
+                    ]}
+                    """));
+            try (var session = definition.open(new Actions())) {
+                session.render();
+                var bars = (javafx.scene.chart.BarChart<?, ?>) session.component("bars").getJavaFxNode();
+                var slices = (javafx.scene.chart.PieChart) session.component("slices").getJavaFxNode();
+                session.states().string("bars").set("[{\"label\":\"Revenue\",\"value\":12}]");
+                session.states().string("slices").set("[{\"label\":\"Online\",\"value\":3}]");
+                assertEquals(12.0, ((Number) bars.getData().getFirst().getData().getFirst().getYValue()).doubleValue());
+                assertEquals(3.0, slices.getData().getFirst().getPieValue());
+            }
+        });
+    }
     @Test void inputPasswordTextActionsAndDisposal() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());

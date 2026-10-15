@@ -147,6 +147,7 @@ final class Renderer {
             }
             case "DataList", "DiffView" -> DesktopNodes.render(type, props, bind, events, session);
             case "Table" -> TableNodes.render(props, bind, events, session);
+            case "BarChart", "PieChart" -> ChartNodes.render(type, props, bind, session);
             case "Slot" -> session.slot(props.get("name").getAsString());
             case "TextArea", "ImagePreview", "ImageSequence", "SoundSequence" -> MediaNodes.render(type, props, bind, events, session);
             case "Input", "PasswordInput" -> {

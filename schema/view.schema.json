@@ -79,6 +79,7 @@
     "imageProps": {"type": "object", "additionalProperties": false, "properties": {"source": {"type": "string"}, "width": {"$ref": "#/$defs/size"}, "height": {"$ref": "#/$defs/size"}}},
     "desktopProps": {"type":"object","additionalProperties":false,"properties":{"width":{"$ref":"#/$defs/size"},"height":{"$ref":"#/$defs/size"},"fillWidth":{"type":"boolean"},"fillHeight":{"type":"boolean"}}},
     "tableProps": {"type":"object","additionalProperties":false,"required":["columns"],"properties":{"columns":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["title","field"],"properties":{"title":{"type":"string"},"field":{"$ref":"#/$defs/identifier"}}}},"height":{"$ref":"#/$defs/size"},"pageSize":{"type":"integer","minimum":1},"horizontalScroll":{"type":"boolean"},"multipleSelection":{"type":"boolean"}}},
+    "chartProps": {"type":"object","additionalProperties":false,"properties":{"title":{"type":"string"},"width":{"$ref":"#/$defs/size"},"height":{"$ref":"#/$defs/size"}}},
     "buttonProps": {
       "type": "object", "additionalProperties": false,
       "properties": { "text": { "type": "string" }, "height": { "$ref": "#/$defs/size" }, "fillWidth": { "type": "boolean" }, "defaultButton": { "type": "boolean" }, "iconSource": { "type": "string" }, "iconSize": { "$ref": "#/$defs/size" } }
@@ -123,7 +124,7 @@
     "node": {
       "type": "object", "additionalProperties": false, "required": ["type"],
       "properties": {
-        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "DatePicker", "Button", "TextArea", "Select", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Scroll", "DataList", "DiffView", "Table", "Slot"] },
+        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "DatePicker", "Button", "TextArea", "Select", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Scroll", "DataList", "DiffView", "Table", "BarChart", "PieChart", "Slot"] },
         "id": { "$ref": "#/$defs/identifier" }, "props": { "type": "object" },
         "style": { "$ref": "#/$defs/style" }, "bind": { "$ref": "#/$defs/bind" },
         "format": { "$ref": "#/$defs/format" }, "validation": { "$ref": "#/$defs/validation" },
@@ -133,6 +134,7 @@
         {"if":{"properties":{"type":{"const":"DataList"}}},"then":{"required":["bind"],"properties":{"props":{"$ref":"#/$defs/desktopProps"},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"bind":{"required":["items","selected"],"properties":{"value":false,"text":false}},"events":{"additionalProperties":false,"properties":{"onSelect":{"$ref":"#/$defs/identifier"}}}}}},
         {"if":{"properties":{"type":{"const":"DiffView"}}},"then":{"required":["bind"],"properties":{"props":{"$ref":"#/$defs/desktopProps"},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"bind":{"required":["text"],"properties":{"value":false}},"events":{"maxProperties":0}}}},
         {"if":{"properties":{"type":{"const":"Table"}}},"then":{"required":["props","bind"],"properties":{"props":{"$ref":"#/$defs/tableProps"},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"bind":{"required":["items","selected"],"properties":{"value":false,"text":false}},"events":{"additionalProperties":false,"properties":{"onSelect":{"$ref":"#/$defs/identifier"},"onDoubleClick":{"$ref":"#/$defs/identifier"}}}}}},
+        {"if":{"properties":{"type":{"enum":["BarChart","PieChart"]}}},"then":{"required":["bind"],"properties":{"props":{"$ref":"#/$defs/chartProps"},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"bind":{"required":["items"],"properties":{"value":false,"text":false,"selected":false}},"events":{"maxProperties":0}}}},
         {"if":{"properties":{"type":{"const":"Slot"}}},"then":{"required":["props"],"properties":{"props":{"type":"object","additionalProperties":false,"required":["name"],"properties":{"name":{"$ref":"#/$defs/identifier"},"fillWidth":{"type":"boolean"},"fillHeight":{"type":"boolean"}}},"style":{"maxProperties":0},"format":false,"validation":{"maxProperties":0},"events":{"maxProperties":0}}}},
         {
           "if": { "properties": { "type": { "enum": ["Column", "Row", "Scroll"] } } },
@@ -163,7 +165,7 @@
         {"if": {"properties": {"type": {"const": "ImagePreview"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["source"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
         {"if": {"properties": {"type": {"enum": ["ImageSequence", "SoundSequence"]}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["items", "selected"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {"onSelect": {"$ref": "#/$defs/identifier"}}}}}},
         {"if": {"properties": {"type": {"not": {"enum": ["Image", "ImagePreview"]}}}}, "then": {"properties": {"bind": {"properties": {"source": false}}}}},
-        {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList", "Select", "Table"]}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
+        {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList", "Select", "Table", "BarChart", "PieChart"]}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
         {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList", "Table"]}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}},
         {"if": {"properties": {"type": {"not": {"const": "Table"}}}}, "then": {"properties": {"bind": {"properties": {"selectedItems": false}}}}},
         {"if": {"properties": {"type": {"not": {"const": "Button"}}}}, "then": {"properties": {"style": {"properties": {"bgColor": false}}}}},

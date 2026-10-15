@@ -64,6 +64,7 @@ All states require a non-null `initial`. Decimals use strings to preserve precis
 | `ImageSequence`, `SoundSequence`, `DataList` | JSON-array string `bind.items`, integer `bind.selected`, optional `onSelect` |
 | `DiffView` | Unified diff string from `bind.text` |
 | `Table` | Native Megalodonte `SimpleTable` with declarative `props.columns`, JSON object-array `bind.items`, string `bind.selected`, and optional selection/double-click actions. |
+| `BarChart`, `PieChart` | Native Megalodonte charts with `props.title` and string JSON-array `bind.items`. Bars use `{label, value, color?}`; slices use `{label, value}`. |
 
 Layout measures are nonnegative integers resolved through Megalodonte scaling. `alignment` accepts `start`, `center` or `end`. Text style supports `fontSize`, `bold`, `textColor` and `fontFamily`; buttons also accept `bgColor`. `bind.visible` and `bind.disabled` require boolean states. `id` identifies a rendered component for `screen.component(id)`.
 

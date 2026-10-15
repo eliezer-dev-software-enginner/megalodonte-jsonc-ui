@@ -48,12 +48,14 @@ public final class UiDefinition {
         boolean layout = Set.of("Column", "Row", "Container").contains(type);
         boolean scroll = type.equals("Scroll");
         boolean desktop = Set.of("DataList", "DiffView").contains(type);
+        boolean chart = Set.of("BarChart", "PieChart").contains(type);
         boolean input = Set.of("Input", "PasswordInput", "TextArea", "DatePicker").contains(type);
-        if (!layout && !scroll && !desktop && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select", "Table", "Slot").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
+        if (!layout && !scroll && !desktop && !chart && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select", "Table", "Slot").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
         String[] allowed = type.equals("Slot") ? new String[]{"name", "fillWidth", "fillHeight"}
                 : type.equals("Table") ? new String[]{"columns", "height", "horizontalScroll", "pageSize", "multipleSelection"}
+                : chart ? new String[]{"title", "width", "height"}
                 : (scroll || desktop) ? new String[]{"width", "height", "fillWidth", "fillHeight"}
                 : type.equals("Container") ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor", "bgImage"}
                 : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
@@ -76,7 +78,7 @@ public final class UiDefinition {
                 }
             }
             else if (Set.of("fillWidth", "fillHeight", "defaultButton", "readOnly", "horizontalScroll", "multipleSelection").contains(key)) Values.bool(value, p);
-            else if (Set.of("text", "placeholder", "alignment", "bgColor", "source", "iconSource", "bgImage", "name").contains(key)) Values.string(value, p);
+            else if (Set.of("text", "title", "placeholder", "alignment", "bgColor", "source", "iconSource", "bgImage", "name").contains(key)) Values.string(value, p);
             else if (Values.integer(value, p) < 0) throw new UiException(p, "Must be nonnegative");
         });
         if (props.has("alignment") && !Set.of("start", "center", "end").contains(props.get("alignment").getAsString()))
@@ -87,7 +89,7 @@ public final class UiDefinition {
         if (type.equals("Button") && props.has("iconSize") && !props.has("iconSource"))
             throw new UiException(path + ".props.iconSize", "Button iconSize requires iconSource");
         JsonObject style = Values.optional(node, "style", path);
-        if ((layout || scroll || desktop || Set.of("Image", "Table", "Slot").contains(type)) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
+        if ((layout || scroll || desktop || chart || Set.of("Image", "Table", "Slot").contains(type)) && !style.isEmpty()) throw new UiException(path + ".style", "Text style is only supported on Text, Button and inputs");
         Values.keys(style, path + ".style", type.equals("Button")
                 ? new String[]{"fontSize", "bold", "textColor", "fontFamily", "bgColor"}
                 : new String[]{"fontSize", "bold", "textColor", "fontFamily"});
@@ -105,7 +107,7 @@ public final class UiDefinition {
             try { stateType = states.type(name); } catch (UiException e) { throw new UiException(p, "Unknown state: " + name); }
             if (key.equals("source") && (!Set.of("Image", "ImagePreview").contains(type) || stateType != String.class))
                 throw new UiException(p, "source requires Image or ImagePreview and string state");
-            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Select", "Table").contains(type) || stateType != String.class)) throw new UiException(p, "items requires a list component and string JSON state");
+            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Select", "Table", "BarChart", "PieChart").contains(type) || stateType != String.class)) throw new UiException(p, "items requires a list component and string JSON state");
             if (key.equals("selected") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Table").contains(type) || stateType != (type.equals("Table") ? String.class : Integer.class))) throw new UiException(p, "selected requires a matching state type");
             if (key.equals("selectedItems") && (!type.equals("Table") || stateType != String.class)) throw new UiException(p, "selectedItems requires Table and string state");
             if (key.equals("text") && type.equals("DiffView") && stateType != String.class) throw new UiException(p, "DiffView requires string state");
@@ -116,6 +118,11 @@ public final class UiDefinition {
         if (Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) && (!bind.has("items") || !bind.has("selected"))) throw new UiException(path + ".bind", "ImageSequence requires items and selected");
         if (type.equals("DiffView") && !bind.has("text")) throw new UiException(path + ".bind", "DiffView requires text");
         if (type.equals("DataList")) DesktopNodes.parseItems(states.string(bind.get("items").getAsString()).get());
+        if (chart) {
+            if (!bind.has("items")) throw new UiException(path + ".bind.items", "Chart requires items");
+            String json = states.string(bind.get("items").getAsString()).get();
+            if (type.equals("BarChart")) ChartNodes.bars(json); else ChartNodes.slices(json);
+        }
         if (type.equals("Table")) {
             if (!props.has("columns") || !bind.has("items") || !bind.has("selected")) throw new UiException(path, "Table requires columns, items and selected");
             if (props.has("multipleSelection") && props.get("multipleSelection").getAsBoolean() && !bind.has("selectedItems")) throw new UiException(path + ".bind.selectedItems", "Multiple selection requires selectedItems");

@@ -107,6 +107,15 @@ class DefinitionTest {
         String multi = table.replace("\"columns\":", "\"multipleSelection\":true,\"columns\":");
         assertThrows(UiException.class, () -> open(states, multi));
     }
+    @Test void chartDefinitionsRequireTypedJsonItems() {
+        String states = "{\"bars\":{\"type\":\"string\",\"initial\":\"[{\\\"label\\\":\\\"Revenue\\\",\\\"value\\\":12,\\\"color\\\":\\\"#10b981\\\"}]\"}}";
+        try (var session = open(states, "{\"type\":\"BarChart\",\"props\":{\"title\":\"Comparison\"},\"bind\":{\"items\":\"bars\"}}")) {
+            assertEquals(12, ChartNodes.bars(session.states().string("bars").get()).getFirst().value());
+        }
+        assertEquals(2, ChartNodes.slices("[{\"label\":\"Online\",\"value\":2}]").getFirst().value());
+        assertThrows(UiException.class, () -> ChartNodes.bars("[{\"label\":\"Bad\",\"value\":\"NaN\"}]"));
+        assertThrows(UiException.class, () -> open(states, "{\"type\":\"PieChart\",\"props\":{\"title\":\"Channels\"}}"));
+    }
     @Test void datePickerRequiresIsoStringState() {
         try (var session = open("{\"date\":{\"type\":\"string\",\"initial\":\"2026-10-14\"}}",
                 "{\"type\":\"DatePicker\",\"bind\":{\"value\":\"date\"}}")) {
