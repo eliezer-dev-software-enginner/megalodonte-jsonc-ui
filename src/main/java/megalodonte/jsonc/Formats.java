@@ -18,8 +18,9 @@ final class Formats {
                 if (type != String.class) throw new UiException(path, "Mask requires a string state");
             }
             case "currency", "number" -> {
-                if (!component.equals("Text")) throw new UiException(path, "Numeric formatting is supported on Text only");
-                if (type != Integer.class && type != BigDecimal.class) throw new UiException(path, "Numeric formatting requires an integer or decimal state");
+                boolean currencyInput = kind.equals("currency") && component.equals("Input") && type == String.class;
+                if (!currencyInput && !component.equals("Text")) throw new UiException(path, "Numeric formatting is supported on Text or currency Input only");
+                if (!currencyInput && type != Integer.class && type != BigDecimal.class) throw new UiException(path, "Numeric formatting requires an integer or decimal state");
                 if (kind.equals("currency")) {
                     Values.keys(spec, path, "kind", "currency", "locale");
                     try { Currency.getInstance(Values.string(spec.get("currency"), path + ".currency")); }
@@ -44,6 +45,7 @@ final class Formats {
                 int limit = (int) format.get("pattern").getAsString().chars().filter(c -> c == '#').count();
                 yield digits.substring(0, Math.min(limit, digits.length()));
             }
+            case "currency" -> text.replaceAll("[^0-9]", "");
             case "uppercase" -> text.toUpperCase(Locale.ROOT);
             case "lowercase" -> text.toLowerCase(Locale.ROOT);
             default -> text;
@@ -55,6 +57,10 @@ final class Formats {
             Locale locale = Locale.forLanguageTag(Values.string(format, "locale", "pt-BR"));
             NumberFormat nf = kind.equals("currency") ? NumberFormat.getCurrencyInstance(locale) : NumberFormat.getNumberInstance(locale);
             if (kind.equals("currency")) nf.setCurrency(Currency.getInstance(format.get("currency").getAsString()));
+            if (kind.equals("currency") && value instanceof String raw) {
+                String digits = storage(raw, format);
+                return nf.format(new BigDecimal(digits.isEmpty() ? "0" : digits).movePointLeft(2));
+            }
             return nf.format(value);
         }
         String text = String.valueOf(value);

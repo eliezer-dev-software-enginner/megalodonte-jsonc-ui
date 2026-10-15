@@ -62,7 +62,7 @@ class DefinitionTest {
                 "{\"type\":\"Text\",\"props\":{\"typo\":1}}",
                 "{\"type\":\"Text\",\"bind\":{\"visible\":\"email\"}}",
                 "{\"type\":\"Text\",\"props\":{\"text\":\"x\"},\"bind\":{\"text\":\"email\"}}",
-                "{\"type\":\"Input\",\"bind\":{\"value\":\"email\"},\"format\":{\"kind\":\"currency\",\"currency\":\"BRL\"}}",
+                "{\"type\":\"Input\",\"bind\":{\"value\":\"email\"},\"format\":{\"kind\":\"number\"}}",
                 "{\"type\":\"Column\",\"children\":[{\"type\":\"Text\",\"id\":\"same\"},{\"type\":\"Text\",\"id\":\"same\"}]}"})
             assertThrows(UiException.class, () -> open(states, view), view);
     }
@@ -82,6 +82,12 @@ class DefinitionTest {
         assertEquals("123", Formats.display("123", mask));
         var currency = Jsonc.parse("{\"kind\":\"currency\",\"currency\":\"BRL\",\"locale\":\"pt-BR\"}");
         assertTrue(Formats.display(new BigDecimal("1234.56"), currency).contains("1.234,56"));
+        assertEquals("123456", Formats.storage("R$ 1.234,56", currency));
+        assertTrue(Formats.display("123456", currency).contains("1.234,56"));
+        try (var session = open("{\"amount\":{\"type\":\"string\",\"initial\":\"123456\"}}",
+                "{\"type\":\"Input\",\"bind\":{\"value\":\"amount\"},\"format\":{\"kind\":\"currency\",\"currency\":\"BRL\",\"locale\":\"pt-BR\"}}")) {
+            assertEquals("123456", session.states().string("amount").get());
+        }
     }
     @Test void desktopDefinitionsRejectWrongBindingsAndInvalidDataBeforeRendering() {
         String states = """

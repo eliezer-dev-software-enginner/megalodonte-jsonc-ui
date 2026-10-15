@@ -72,7 +72,7 @@ Layout measures are nonnegative integers resolved through Megalodonte scaling. `
 
 ### Format and validation
 
-See [the formatting example](examples/formatting.view.jsonc). `mask` uses `#` for digits and punctuation, with `store: "digits"`; state values must use that digit-only representation. `uppercase` and `lowercase` normalize input or transform text display. `currency` and `number` format numeric states for display without changing their numeric type. Password inputs and text areas do not support formatters. Mask reformatting currently moves the caret to the end.
+See [the formatting example](examples/formatting.view.jsonc). `mask` uses `#` for digits and punctuation, with `store: "digits"`; state values must use that digit-only representation. `uppercase` and `lowercase` normalize input or transform text display. `currency` and `number` format numeric `Text` states without changing their numeric type. A `currency` `Input` accepts a string state containing centavos as digits and displays a localized amount while preserving that storage format. Password inputs and text areas do not support formatters. Mask and currency input reformatting currently move the caret to the end.
 
 Input validation supports `required`, `email`, `minLength`, `maxLength` and `label`. `screen.validate()` returns the first error per field; it neither submits a form nor changes UI automatically. Email validation checks basic shape, not address existence.
 

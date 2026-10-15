@@ -234,7 +234,7 @@ final class Renderer {
         if (!format.isEmpty()) field.setTextFormatter(new TextFormatter<String>(change -> {
             if (syncing[0] || !change.isContentChange()) return change;
             String candidate = change.getControlNewText();
-            if (Values.string(format, "kind", "").equals("mask") && change.isDeleted()) {
+            if (java.util.Set.of("mask", "currency").contains(Values.string(format, "kind", "")) && change.isDeleted()) {
                 String oldDigits = Formats.storage(change.getControlText(), format);
                 if (Formats.storage(candidate, format).equals(oldDigits) && !oldDigits.isEmpty()) {
                     int before = Formats.storage(change.getControlText().substring(0, change.getRangeStart()), format).length();

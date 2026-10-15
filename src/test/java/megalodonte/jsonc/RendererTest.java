@@ -44,6 +44,21 @@ class RendererTest {
     static TextField field(UiSession session, String id) {
         return (TextField) ((StackPane) session.component(id).getJavaFxNode()).getChildren().getFirst();
     }
+    @Test void currencyInputKeepsCentsStateWhileFormattingVisibleText() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var definition = UiDefinition.parse(DefinitionTest.document(
+                    "{\"amount\":{\"type\":\"string\",\"initial\":\"1234\"}}",
+                    "{\"type\":\"Input\",\"id\":\"amount\",\"bind\":{\"value\":\"amount\"},\"format\":{\"kind\":\"currency\",\"currency\":\"BRL\",\"locale\":\"pt-BR\"}}"));
+            try (var session = definition.open(new Actions())) {
+                session.render();
+                var input = field(session, "amount");
+                assertTrue(input.getText().contains("12,34"));
+                input.setText("R$ 56,78");
+                assertEquals("5678", session.states().string("amount").get());
+            }
+        });
+    }
     @Test void nativeChartsFollowJsoncItems() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());
