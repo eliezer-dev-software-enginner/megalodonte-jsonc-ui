@@ -6,26 +6,31 @@ The [codebase guide](docs/CODEBASE.md) maps every production class to its respon
 
 For applications organized as one script per view, use the sibling `megalodonte-script-app` launcher. This library also exposes a low-level API for custom hosts.
 
-## Install and open a view
+## Build and open a view
 
-The local Gradle build can include adjacent `core`, `base`, `components` and `theme` checkouts. Elsewhere, consume published Maven artifacts:
+Building from this checkout requires JDK 25 and the included Gradle wrapper. The build uses JavaFX 25.0.1 and resolves Megalodonte `base` and `components` version `1.0.0-beta` through Gradle. If a sibling `../../libraries` directory exists, the build includes its `core`, `base`, `components` and `theme` source checkouts by default. Set `-PuseLocalSources=false` to resolve dependencies through the configured Maven repositories instead. The artifacts must be available in Maven Local or Maven Central; this repository does not contain them.
+
+To use the library in another Gradle project, configure repositories and dependencies matching this build. The example also uses `DefaultTheme`, supplied by `megalodonte-theme`:
 
 ```kotlin
 repositories { mavenLocal(); mavenCentral() }
-dependencies { implementation("megalodonte:megalodonte-jsonc-ui:0.1.0") }
+dependencies {
+    implementation("megalodonte:megalodonte-jsonc-ui:0.1.0")
+    implementation("megalodonte:megalodonte-theme:1.0.0-beta")
+}
 ```
+
+For a JavaFX application with its toolkit initialized, the following loads the view distributed in this checkout. Run rendering and subsequent UI work on the JavaFX Application Thread:
 
 ```java
 ThemeManager.setTheme(new DefaultTheme());
-var actions = new Actions().register("save", screen -> {
-    if (screen.validate().isEmpty()) saveCustomer(screen.states().string("name").get());
-});
-var screen = UiDefinition.fromResource(Main.class, "/views/customer.view.jsonc").open(actions);
-context.useView(screen);
-// The router calls onDestroy(), or the host calls screen.close().
+var screen = UiDefinition.fromPath(Path.of("examples/formatting.view.jsonc"))
+        .open(new Actions());
+var root = screen.render();
+// Pass root to the host; call screen.close() when the view is removed.
 ```
 
-`UiDefinition.fromPath(path)` reads an external file and `UiDefinition.parse(jsonc)` reads a string. A definition may open multiple independent `UiSession` instances. `render()` builds each session's component tree once.
+This example runs from the repository root and requires imports for `Path`, `ThemeManager`, `DefaultTheme`, `UiDefinition` and `Actions`. `UiDefinition.fromResource(owner, path)` reads a classpath resource, while `UiDefinition.parse(jsonc)` reads a string. A definition may open multiple independent `UiSession` instances. `render()` builds each session's component tree once.
 
 Application adapters can call `session.bind(name, modelState, String.class)` for
 two-way form state or `session.display(name, readableState, Boolean.class)` for
