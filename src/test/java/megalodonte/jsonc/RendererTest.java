@@ -237,6 +237,12 @@ class RendererTest {
                 assertEquals("Acme", control.getConverter().toString("42"));
                 control.setValue("42");
                 assertEquals("42", session.states().string("selected").get());
+                control.setValue(null);
+                assertEquals("", session.states().string("selected").get());
+                session.states().string("selected").set("0");
+                assertEquals("0", control.getValue());
+                session.states().string("selected").set("");
+                assertNull(control.getValue());
             }
         });
     }

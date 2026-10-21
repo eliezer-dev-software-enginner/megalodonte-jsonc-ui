@@ -83,6 +83,7 @@ final class Renderer {
                 @SuppressWarnings("unchecked") var control = (ComboBox<String>) select.getJavaFxNode();
                 var selected = session.states().string(bind.get("value").getAsString());
                 var labels = new java.util.HashMap<String, String>();
+                final boolean[] updatingItems = {false};
                 control.setConverter(new javafx.util.StringConverter<>() {
                     @Override public String toString(String value) { return value == null ? "" : labels.getOrDefault(value, value); }
                     @Override public String fromString(String label) {
@@ -109,14 +110,22 @@ final class Renderer {
                     } catch (RuntimeException error) {
                         throw new UiException("view.bind.items", "Select items must be unique strings or label/value objects");
                     }
-                    control.getItems().setAll(items);
-                    if (!java.util.Objects.equals(control.getValue(), selected.get())) control.setValue(selected.get());
+                    updatingItems[0] = true;
+                    try {
+                        control.getItems().setAll(items);
+                        String value = selected.get();
+                        if (!java.util.Objects.equals(control.getValue(), value))
+                            control.setValue(value.isEmpty() ? null : value);
+                    } finally { updatingItems[0] = false; }
                 });
                 session.observe(selected, value -> {
-                    if (!java.util.Objects.equals(control.getValue(), value)) control.setValue(value);
+                    String choice = value.isEmpty() ? null : value;
+                    if (!java.util.Objects.equals(control.getValue(), choice)) control.setValue(choice);
                 });
                 javafx.beans.value.ChangeListener<String> listener = (ignored, old, value) -> {
-                    if (value != null && !java.util.Objects.equals(selected.get(), value)) selected.set(value);
+                    if (updatingItems[0]) return;
+                    String choice = value == null ? "" : value;
+                    if (!java.util.Objects.equals(selected.get(), choice)) selected.set(choice);
                 };
                 control.valueProperty().addListener(listener);
                 session.cleanup(() -> { control.valueProperty().removeListener(listener); control.getItems().clear(); });
