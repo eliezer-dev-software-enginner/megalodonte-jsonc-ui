@@ -10,7 +10,7 @@ For applications organized as one script per view, use the sibling `megalodonte-
 
 Building from this checkout requires JDK 25 and the included Gradle wrapper. The build uses JavaFX 25.0.1 and resolves Megalodonte `base` and `components` version `1.0.0-beta` through Gradle. If a sibling `../../libraries` directory exists, the build includes its `core`, `base`, `components` and `theme` source checkouts by default. Set `-PuseLocalSources=false` to resolve dependencies through the configured Maven repositories instead. The artifacts must be available in Maven Local or Maven Central; this repository does not contain them.
 
-To use the library in another Gradle project, configure repositories and dependencies matching this build. The example also uses `DefaultTheme`, supplied by `megalodonte-theme`:
+To use the library in another Gradle project, configure repositories and dependencies matching this build. The example also uses `DefaultTheme`, supplied by `megalodonte-theme`. Run `./gradlew publishToMavenLocal` in this checkout first if the `megalodonte-jsonc-ui:0.1.0` artifact is not already available to the consuming project. Its Megalodonte dependencies must also be resolvable from the configured repositories:
 
 ```kotlin
 repositories { mavenLocal(); mavenCentral() }
@@ -98,6 +98,8 @@ Create the session before showing a screen. Rendering, post-render state mutatio
 
 The contract supports reactive local state, validation, formatting and data-driven list/media controls. It does not yet provide declarative computed states, global stores, templates or hot reload. Domain persistence and navigation policy belong to the host application.
 
+To run the repository tests from this checkout:
+
 ```sh
-./gradlew test publishToMavenLocal
+./gradlew test
 ```
