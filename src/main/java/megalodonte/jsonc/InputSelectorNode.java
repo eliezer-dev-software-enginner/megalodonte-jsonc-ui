@@ -31,6 +31,11 @@ final class InputSelectorNode {
         var selected = session.states().string(bind.get("value").getAsString());
         var labels = new HashMap<String, String>();
         final boolean[] syncing = {false};
+        // ComboBox's converter formats the editor, but its popup cells otherwise
+        // render the raw value (the product code). Use the themed Select cells.
+        select.displayText(value -> value == null ? "" : labels.getOrDefault(value, value));
+        control.setStyle(control.getStyle() + "; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-background-insets: 0; -fx-border-insets: 0;");
+        control.getEditor().setStyle(control.getEditor().getStyle() + "; -fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-background-insets: 0; -fx-border-insets: 0; -fx-border-color: transparent; -fx-background-color: transparent;");
         control.setConverter(new StringConverter<>() {
             @Override public String toString(String value) { return value == null ? "" : labels.getOrDefault(value, value); }
             @Override public String fromString(String label) {

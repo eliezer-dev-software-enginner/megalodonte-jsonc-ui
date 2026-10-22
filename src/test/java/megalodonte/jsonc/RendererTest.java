@@ -265,6 +265,12 @@ class RendererTest {
                 session.states().string("choices").set("[{\"value\":\"SKU003\",\"label\":\"Jaqueta — SKU003\"}]");
                 assertEquals("jaq", control.getEditor().getText());
                 assertEquals("Jaqueta — SKU003", control.getConverter().toString("SKU003"));
+                var popupList = new javafx.scene.control.ListView<String>(control.getItems());
+                var popupCell = control.getCellFactory().call(popupList);
+                popupCell.updateListView(popupList);
+                popupCell.updateIndex(0);
+                assertEquals("Jaqueta — SKU003", popupCell.getText());
+                assertTrue(control.getStyle().contains("-fx-faint-focus-color: transparent"));
                 control.setValue("SKU003");
                 assertEquals("SKU003", session.states().string("selected").get());
                 assertEquals("Jaqueta — SKU003", session.states().string("query").get());
