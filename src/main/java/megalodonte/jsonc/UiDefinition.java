@@ -50,7 +50,7 @@ public final class UiDefinition {
         boolean desktop = Set.of("DataList", "DiffView").contains(type);
         boolean chart = Set.of("BarChart", "PieChart").contains(type);
         boolean input = Set.of("Input", "PasswordInput", "TextArea", "DatePicker").contains(type);
-        if (!layout && !scroll && !desktop && !chart && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select", "Table", "Slot").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
+        if (!layout && !scroll && !desktop && !chart && !input && !Set.of("Text", "Button", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Select", "InputSelector", "Table", "Slot").contains(type)) throw new UiException(path + ".type", "Unknown component: " + type);
         if (node.has("id") && !ids.add(Values.name(node.get("id"), path + ".id"))) throw new UiException(path + ".id", "Duplicate component id");
         JsonObject props = Values.optional(node, "props", path);
         String[] allowed = type.equals("Slot") ? new String[]{"name", "fillWidth", "fillHeight"}
@@ -60,6 +60,7 @@ public final class UiDefinition {
                 : type.equals("Container") ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor", "bgImage"}
                 : layout ? new String[]{"spacing", "padding", "width", "maxWidth", "height", "fillWidth", "fillHeight", "alignment", "bgColor"}
                 : type.equals("TextArea") ? new String[]{"placeholder", "height", "width", "readOnly"}
+                : type.equals("InputSelector") ? new String[]{"height", "width", "placeholder"}
                 : Set.of("Select", "DatePicker").contains(type) ? new String[]{"height", "width"}
                 : input ? new String[]{"placeholder", "height", "width"}
                 : type.equals("Image") ? new String[]{"source", "height", "width"}
@@ -111,12 +112,12 @@ public final class UiDefinition {
             try { stateType = states.type(name); } catch (UiException e) { throw new UiException(p, "Unknown state: " + name); }
             if (key.equals("source") && (!Set.of("Image", "ImagePreview").contains(type) || stateType != String.class))
                 throw new UiException(p, "source requires Image or ImagePreview and string state");
-            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Select", "Table", "BarChart", "PieChart").contains(type) || stateType != String.class)) throw new UiException(p, "items requires a list component and string JSON state");
+            if (key.equals("items") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Select", "InputSelector", "Table", "BarChart", "PieChart").contains(type) || stateType != String.class)) throw new UiException(p, "items requires a list component and string JSON state");
             if (key.equals("selected") && (!Set.of("ImageSequence", "SoundSequence", "DataList", "Table").contains(type) || stateType != (type.equals("Table") ? String.class : Integer.class))) throw new UiException(p, "selected requires a matching state type");
             if (key.equals("selectedItems") && (!type.equals("Table") || stateType != String.class)) throw new UiException(p, "selectedItems requires Table and string state");
             if (key.equals("text") && type.equals("DiffView") && stateType != String.class) throw new UiException(p, "DiffView requires string state");
-            if (key.equals("value") && (!(input || type.equals("Select")) || stateType != String.class)) throw new UiException(p, "value requires an input and string state");
-            if (key.equals("text") && !Set.of("Text", "Button", "DiffView").contains(type)) throw new UiException(p, "text requires Text or Button");
+            if (key.equals("value") && (!(input || type.equals("Select") || type.equals("InputSelector")) || stateType != String.class)) throw new UiException(p, "value requires an input and string state");
+            if (key.equals("text") && !Set.of("Text", "Button", "DiffView", "InputSelector").contains(type)) throw new UiException(p, "text requires Text, Button or InputSelector");
             if (Set.of("visible", "disabled").contains(key) && stateType != Boolean.class) throw new UiException(p, "Requires boolean state");
         });
         if (Set.of("ImageSequence", "SoundSequence", "DataList").contains(type) && (!bind.has("items") || !bind.has("selected"))) throw new UiException(path + ".bind", "ImageSequence requires items and selected");
@@ -135,6 +136,8 @@ public final class UiDefinition {
         }
         if (type.equals("Select") && (!bind.has("items") || !bind.has("value")))
             throw new UiException(path + ".bind", "Select requires items and value");
+        if (type.equals("InputSelector") && (!bind.has("items") || !bind.has("value") || !bind.has("text")))
+            throw new UiException(path + ".bind", "InputSelector requires items, value and text");
         if (type.equals("DatePicker")) {
             var iso = states.string(bind.get("value").getAsString()).get();
             if (iso != null && !iso.isBlank()) try { java.time.LocalDate.parse(iso); }

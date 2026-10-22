@@ -75,6 +75,7 @@ final class Renderer {
                 session.cleanup(() -> node.setOnAction(null));
                 yield button;
             }
+            case "InputSelector" -> InputSelectorNode.render(props, bind, session);
             case "Select" -> {
                 var selectProps = new ThemeProps.Select();
                 if (props.has("width")) selectProps.minWidth(props.get("width").getAsInt());

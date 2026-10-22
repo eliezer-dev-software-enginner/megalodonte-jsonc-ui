@@ -246,6 +246,35 @@ class RendererTest {
             }
         });
     }
+    @Test void inputSelectorFiltersWithoutASecondControlAndKeepsLabel() throws Exception {
+        fx(() -> {
+            ThemeManager.setTheme(new DefaultTheme());
+            var definition = UiDefinition.parse(DefinitionTest.document("""
+                    {"query":{"type":"string","initial":""},
+                     "selected":{"type":"string","initial":""},
+                     "choices":{"type":"string","initial":"[]"}}
+                    """, """
+                    {"type":"InputSelector","props":{"placeholder":"Nome ou código"},
+                     "bind":{"text":"query","value":"selected","items":"choices"}}
+                    """));
+            try (var session = definition.open(new Actions())) {
+                @SuppressWarnings("unchecked") var control = (ComboBox<String>) session.render().getJavaFxNode();
+                assertTrue(control.isEditable());
+                control.getEditor().setText("jaq");
+                assertEquals("jaq", session.states().string("query").get());
+                session.states().string("choices").set("[{\"value\":\"SKU003\",\"label\":\"Jaqueta — SKU003\"}]");
+                assertEquals("jaq", control.getEditor().getText());
+                assertEquals("Jaqueta — SKU003", control.getConverter().toString("SKU003"));
+                control.setValue("SKU003");
+                assertEquals("SKU003", session.states().string("selected").get());
+                assertEquals("Jaqueta — SKU003", session.states().string("query").get());
+                control.getEditor().setText("vest");
+                assertEquals("", session.states().string("selected").get());
+                assertEquals("vest", session.states().string("query").get());
+                assertEquals("vest", control.getEditor().getText());
+            }
+        });
+    }
     @Test void maskEditingAndCurrencyDisplay() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());

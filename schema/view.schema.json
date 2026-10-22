@@ -124,7 +124,7 @@
     "node": {
       "type": "object", "additionalProperties": false, "required": ["type"],
       "properties": {
-        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "DatePicker", "Button", "TextArea", "Select", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Scroll", "DataList", "DiffView", "Table", "BarChart", "PieChart", "Slot"] },
+        "type": { "enum": ["Column", "Row", "Container", "Text", "Input", "PasswordInput", "DatePicker", "Button", "TextArea", "Select", "InputSelector", "Image", "ImagePreview", "ImageSequence", "SoundSequence", "Scroll", "DataList", "DiffView", "Table", "BarChart", "PieChart", "Slot"] },
         "id": { "$ref": "#/$defs/identifier" }, "props": { "type": "object" },
         "style": { "$ref": "#/$defs/style" }, "bind": { "$ref": "#/$defs/bind" },
         "format": { "$ref": "#/$defs/format" }, "validation": { "$ref": "#/$defs/validation" },
@@ -161,11 +161,12 @@
         },
         {"if": {"properties": {"type": {"const": "TextArea"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/textAreaProps"}, "bind": {"required": ["value"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
         {"if": {"properties": {"type": {"const": "Select"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["items", "value"]}, "format": false, "validation": {"maxProperties": 0}, "events": {"maxProperties": 0}}}},
+        {"if": {"properties": {"type": {"const": "InputSelector"}}}, "then": {"required": ["bind"], "properties": {"props": {"type":"object","additionalProperties":false,"properties":{"width":{"$ref":"#/$defs/size"},"height":{"$ref":"#/$defs/size"},"placeholder":{"type":"string"}}}, "bind": {"required": ["items", "value", "text"]}, "format": false, "validation": {"maxProperties": 0}, "events": {"maxProperties": 0}}}},
         {"if": {"properties": {"type": {"const": "DatePicker"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["value"], "properties":{"items":false,"selected":false}}, "format": false, "events": {"maxProperties": 0}}}},
         {"if": {"properties": {"type": {"const": "ImagePreview"}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["source"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {}}}}},
         {"if": {"properties": {"type": {"enum": ["ImageSequence", "SoundSequence"]}}}, "then": {"required": ["bind"], "properties": {"props": {"$ref": "#/$defs/mediaProps"}, "bind": {"required": ["items", "selected"]}, "format": false, "events": {"type": "object", "additionalProperties": false, "properties": {"onSelect": {"$ref": "#/$defs/identifier"}}}}}},
         {"if": {"properties": {"type": {"not": {"enum": ["Image", "ImagePreview"]}}}}, "then": {"properties": {"bind": {"properties": {"source": false}}}}},
-        {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList", "Select", "Table", "BarChart", "PieChart"]}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
+        {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList", "Select", "InputSelector", "Table", "BarChart", "PieChart"]}}}}, "then": {"properties": {"bind": {"properties": {"items": false}}}}},
         {"if": {"properties": {"type": {"not": {"enum": ["ImageSequence", "SoundSequence", "DataList", "Table"]}}}}, "then": {"properties": {"bind": {"properties": {"selected": false}}}}},
         {"if": {"properties": {"type": {"not": {"const": "Table"}}}}, "then": {"properties": {"bind": {"properties": {"selectedItems": false}}}}},
         {"if": {"properties": {"type": {"not": {"const": "Button"}}}}, "then": {"properties": {"style": {"properties": {"bgColor": false}}}}},
