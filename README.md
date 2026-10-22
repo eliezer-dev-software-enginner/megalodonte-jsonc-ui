@@ -10,6 +10,14 @@ For applications organized as one script per view, use the sibling `megalodonte-
 
 Building from this checkout requires JDK 25 and the included Gradle wrapper. The build uses JavaFX 25.0.1 and resolves Megalodonte `base` and `components` version `1.0.0-beta` through Gradle. If a sibling `../../libraries` directory exists, the build includes its `core`, `base`, `components` and `theme` source checkouts by default. Set `-PuseLocalSources=false` to resolve dependencies through the configured Maven repositories instead. The artifacts must be available in Maven Local or Maven Central; this repository does not contain them.
 
+From the repository root, build with:
+
+```sh
+./gradlew build
+```
+
+To resolve Megalodonte dependencies from the configured Maven repositories even when sibling source checkouts exist, run `./gradlew build -PuseLocalSources=false`.
+
 To use the library in another Gradle project, configure repositories and dependencies matching this build. The example also uses `DefaultTheme`, supplied by `megalodonte-theme`. Run `./gradlew publishToMavenLocal` in this checkout first if the `megalodonte-jsonc-ui:0.1.0` artifact is not already available to the consuming project. Its Megalodonte dependencies must also be resolvable from the configured repositories:
 
 ```kotlin
@@ -30,7 +38,7 @@ var root = screen.render();
 // Pass root to the host; call screen.close() when the view is removed.
 ```
 
-This example runs from the repository root and requires imports for `Path`, `ThemeManager`, `DefaultTheme`, `UiDefinition` and `Actions`. `UiDefinition.fromResource(owner, path)` reads a classpath resource, while `UiDefinition.parse(jsonc)` reads a string. A definition may open multiple independent `UiSession` instances. `render()` builds each session's component tree once.
+The relative path in this example resolves from the process working directory, so it works when the view is available at `examples/formatting.view.jsonc` relative to that directory. A consuming application must provide the view file at its chosen path or package it as a classpath resource and use `UiDefinition.fromResource(owner, path)`. The snippet requires imports for `Path`, `ThemeManager`, `DefaultTheme`, `UiDefinition` and `Actions`; `UiDefinition.parse(jsonc)` reads a string. A definition may open multiple independent `UiSession` instances. `render()` builds each session's component tree once.
 
 Application adapters can call `session.bind(name, modelState, String.class)` for
 two-way form state or `session.display(name, readableState, Boolean.class)` for
