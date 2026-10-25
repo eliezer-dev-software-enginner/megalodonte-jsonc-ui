@@ -281,6 +281,29 @@ class RendererTest {
             }
         });
     }
+    @Test void inputSelectorCanClearSuggestionsDuringSelection() throws Exception {
+        var definition = UiDefinition.parse(DefinitionTest.document("""
+                {"query":{"type":"string","initial":""},
+                 "selected":{"type":"string","initial":""},
+                 "choices":{"type":"string","initial":"[]"}}
+                """, """
+                {"type":"InputSelector","bind":{"text":"query","value":"selected","items":"choices"}}
+                """));
+        var session = definition.open(new Actions());
+        try {
+            fx(() -> {
+                @SuppressWarnings("unchecked") var control = (ComboBox<String>) session.render().getJavaFxNode();
+                session.states().string("choices").set("[{\"value\":\"SKU003\",\"label\":\"Jaqueta — SKU003\"}]");
+                session.states().string("selected").observe(value -> {
+                    if (!value.isBlank()) session.states().string("choices").set("[]");
+                });
+                control.setValue("SKU003");
+                assertEquals("SKU003", session.states().string("selected").get());
+                assertEquals("Jaqueta — SKU003", session.states().string("query").get());
+            });
+            fx(() -> assertEquals("[]", session.states().string("choices").get()));
+        } finally { fx(session::close); }
+    }
     @Test void maskEditingAndCurrencyDisplay() throws Exception {
         fx(() -> {
             ThemeManager.setTheme(new DefaultTheme());

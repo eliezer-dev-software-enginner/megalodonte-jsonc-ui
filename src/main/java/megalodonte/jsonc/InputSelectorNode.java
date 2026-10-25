@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import javafx.beans.value.ChangeListener;
+import javafx.application.Platform;
 import javafx.scene.control.ComboBox;
 import javafx.util.StringConverter;
 import megalodonte.base.components.Component;
@@ -31,6 +32,9 @@ final class InputSelectorNode {
         var selected = session.states().string(bind.get("value").getAsString());
         var labels = new HashMap<String, String>();
         final boolean[] syncing = {false};
+        final boolean[] selecting = {false};
+        final boolean[] disposed = {false};
+        final int[] optionsRevision = {0};
         // ComboBox's converter formats the editor, but its popup cells otherwise
         // render the raw value (the product code). Use the themed Select cells.
         select.displayText(value -> value == null ? "" : labels.getOrDefault(value, value));
@@ -82,14 +86,20 @@ final class InputSelectorNode {
             } catch (RuntimeException error) {
                 throw new UiException("view.bind.items", "InputSelector items must be unique strings or label/value objects");
             }
-            syncing[0] = true;
-            try {
-                String typed = control.getEditor().getText();
-                control.getItems().setAll(items);
-                control.getEditor().setText(typed);
-            } finally { syncing[0] = false; }
-            if (!items.isEmpty() && control.getEditor().isFocused() && !query.get().isBlank()) control.show();
-            else control.hide();
+            int revision = ++optionsRevision[0];
+            Runnable refreshOptions = () -> {
+                if (disposed[0] || revision != optionsRevision[0]) return;
+                syncing[0] = true;
+                try {
+                    String typed = control.getEditor().getText();
+                    control.getItems().setAll(items);
+                    control.getEditor().setText(typed);
+                } finally { syncing[0] = false; }
+                if (!items.isEmpty() && control.getEditor().isFocused() && !query.get().isBlank()) control.show();
+                else control.hide();
+            };
+            if (selecting[0]) Platform.runLater(refreshOptions);
+            else refreshOptions.run();
         });
         ChangeListener<String> textListener = (ignored, old, text) -> {
             if (syncing[0]) return;
@@ -98,13 +108,18 @@ final class InputSelectorNode {
         };
         ChangeListener<String> valueListener = (ignored, old, value) -> {
             if (syncing[0] || value == null || !control.getItems().contains(value)) return;
-            selected.set(value);
-            query.set(labels.getOrDefault(value, value));
-            control.hide();
+            String label = labels.getOrDefault(value, value);
+            selecting[0] = true;
+            try {
+                selected.set(value);
+                query.set(label);
+                control.hide();
+            } finally { selecting[0] = false; }
         };
         control.getEditor().textProperty().addListener(textListener);
         control.valueProperty().addListener(valueListener);
         session.cleanup(() -> {
+            disposed[0] = true;
             control.getEditor().textProperty().removeListener(textListener);
             control.valueProperty().removeListener(valueListener);
             control.getItems().clear();
