@@ -32,9 +32,7 @@ final class InputSelectorNode {
         var selected = session.states().string(bind.get("value").getAsString());
         var labels = new HashMap<String, String>();
         final boolean[] syncing = {false};
-        final boolean[] selecting = {false};
         final boolean[] disposed = {false};
-        final int[] optionsRevision = {0};
         // ComboBox's converter formats the editor, but its popup cells otherwise
         // render the raw value (the product code). Use the themed Select cells.
         select.displayText(value -> value == null ? "" : labels.getOrDefault(value, value));
@@ -86,35 +84,40 @@ final class InputSelectorNode {
             } catch (RuntimeException error) {
                 throw new UiException("view.bind.items", "InputSelector items must be unique strings or label/value objects");
             }
-            int revision = ++optionsRevision[0];
-            Runnable refreshOptions = () -> {
-                if (disposed[0] || revision != optionsRevision[0]) return;
-                syncing[0] = true;
-                try {
-                    String typed = control.getEditor().getText();
-                    control.getItems().setAll(items);
-                    control.getEditor().setText(typed);
-                } finally { syncing[0] = false; }
-                if (!items.isEmpty() && control.getEditor().isFocused() && !query.get().isBlank()) control.show();
-                else control.hide();
-            };
-            if (selecting[0]) Platform.runLater(refreshOptions);
-            else refreshOptions.run();
+            syncing[0] = true;
+            try {
+                String typed = control.getEditor().getText();
+                control.getItems().setAll(items);
+                control.getEditor().setText(typed);
+            } finally { syncing[0] = false; }
+            if (!items.isEmpty() && control.getEditor().isFocused() && !query.get().isBlank()) control.show();
+            else control.hide();
         });
         ChangeListener<String> textListener = (ignored, old, text) -> {
             if (syncing[0]) return;
+            String currentValue = control.getValue();
+            if ((currentValue != null && Objects.equals(text, labels.get(currentValue)))
+                    || labels.containsValue(text)) {
+                // The ComboBox skin also writes the chosen label into its editor
+                // while the popup ListView is still processing the click.
+                // The value listener commits that label after the event.
+                return;
+            }
             if (!selected.get().isEmpty()) selected.set("");
             if (!Objects.equals(query.get(), text)) query.set(text);
         };
         ChangeListener<String> valueListener = (ignored, old, value) -> {
             if (syncing[0] || value == null || !control.getItems().contains(value)) return;
             String label = labels.getOrDefault(value, value);
-            selecting[0] = true;
-            try {
+            // The popup ListView is still notifying its selection listeners here.
+            // Touching the query/options or hiding the popup synchronously can
+            // invalidate its added-items list before ListViewBehavior reads it.
+            Platform.runLater(() -> {
+                if (disposed[0] || !Objects.equals(control.getValue(), value)) return;
+                control.hide();
                 selected.set(value);
                 query.set(label);
-                control.hide();
-            } finally { selecting[0] = false; }
+            });
         };
         control.getEditor().textProperty().addListener(textListener);
         control.valueProperty().addListener(valueListener);

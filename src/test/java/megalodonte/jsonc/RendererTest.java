@@ -5,6 +5,8 @@ import javafx.scene.Scene;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import megalodonte.base.theme.ThemeManager;
 import megalodonte.theme.DefaultTheme;
 import org.junit.jupiter.api.*;
@@ -247,17 +249,18 @@ class RendererTest {
         });
     }
     @Test void inputSelectorFiltersWithoutASecondControlAndKeepsLabel() throws Exception {
-        fx(() -> {
-            ThemeManager.setTheme(new DefaultTheme());
-            var definition = UiDefinition.parse(DefinitionTest.document("""
-                    {"query":{"type":"string","initial":""},
-                     "selected":{"type":"string","initial":""},
-                     "choices":{"type":"string","initial":"[]"}}
-                    """, """
-                    {"type":"InputSelector","props":{"placeholder":"Nome ou código"},
-                     "bind":{"text":"query","value":"selected","items":"choices"}}
-                    """));
-            try (var session = definition.open(new Actions())) {
+        ThemeManager.setTheme(new DefaultTheme());
+        var definition = UiDefinition.parse(DefinitionTest.document("""
+                {"query":{"type":"string","initial":""},
+                 "selected":{"type":"string","initial":""},
+                 "choices":{"type":"string","initial":"[]"}}
+                """, """
+                {"type":"InputSelector","props":{"placeholder":"Nome ou código"},
+                 "bind":{"text":"query","value":"selected","items":"choices"}}
+                """));
+        var session = definition.open(new Actions());
+        try {
+            fx(() -> {
                 @SuppressWarnings("unchecked") var control = (ComboBox<String>) session.render().getJavaFxNode();
                 assertTrue(control.isEditable());
                 control.getEditor().setText("jaq");
@@ -272,14 +275,17 @@ class RendererTest {
                 assertEquals("Jaqueta — SKU003", popupCell.getText());
                 assertTrue(control.getStyle().contains("-fx-faint-focus-color: transparent"));
                 control.setValue("SKU003");
+            });
+            fx(() -> {
+                @SuppressWarnings("unchecked") var control = (ComboBox<String>) session.render().getJavaFxNode();
                 assertEquals("SKU003", session.states().string("selected").get());
                 assertEquals("Jaqueta — SKU003", session.states().string("query").get());
                 control.getEditor().setText("vest");
                 assertEquals("", session.states().string("selected").get());
                 assertEquals("vest", session.states().string("query").get());
                 assertEquals("vest", control.getEditor().getText());
-            }
-        });
+            });
+        } finally { fx(session::close); }
     }
     @Test void inputSelectorCanClearSuggestionsDuringSelection() throws Exception {
         var definition = UiDefinition.parse(DefinitionTest.document("""
@@ -298,11 +304,47 @@ class RendererTest {
                     if (!value.isBlank()) session.states().string("choices").set("[]");
                 });
                 control.setValue("SKU003");
+            });
+            fx(() -> {
                 assertEquals("SKU003", session.states().string("selected").get());
                 assertEquals("Jaqueta — SKU003", session.states().string("query").get());
+                assertEquals("[]", session.states().string("choices").get());
             });
-            fx(() -> assertEquals("[]", session.states().string("choices").get()));
         } finally { fx(session::close); }
+    }
+    @Test void inputSelectorPopupSelectionDoesNotMutateListDuringClick() throws Exception {
+        var definition = UiDefinition.parse(DefinitionTest.document("""
+                {"query":{"type":"string","initial":""},
+                 "selected":{"type":"string","initial":""},
+                 "choices":{"type":"string","initial":"[]"}}
+                """, """
+                {"type":"InputSelector","bind":{"text":"query","value":"selected","items":"choices"}}
+                """));
+        var session = definition.open(new Actions());
+        var stage = new Stage[1];
+        try {
+            fx(() -> {
+                @SuppressWarnings("unchecked") var control = (ComboBox<String>) session.render().getJavaFxNode();
+                stage[0] = new Stage();
+                stage[0].setScene(new Scene(new StackPane(control), 400, 180));
+                stage[0].show();
+                session.states().string("query").observe(text -> {
+                    if (!text.isBlank()) session.states().string("choices").set(
+                            "[{\"value\":\"SKU003\",\"label\":\"Jaqueta — SKU003\"}]");
+                });
+                control.getEditor().setText("jaq");
+                control.show();
+            });
+            fx(() -> {
+                var popupList = Window.getWindows().stream()
+                        .filter(window -> window != stage[0] && window.isShowing())
+                        .map(window -> window.getScene().getRoot().lookup(".list-view"))
+                        .filter(ListView.class::isInstance)
+                        .map(ListView.class::cast).findFirst().orElseThrow();
+                popupList.getSelectionModel().select(0);
+            });
+            fx(() -> assertEquals("SKU003", session.states().string("selected").get()));
+        } finally { fx(() -> { session.close(); if (stage[0] != null) stage[0].close(); }); }
     }
     @Test void maskEditingAndCurrencyDisplay() throws Exception {
         fx(() -> {
